@@ -85,26 +85,25 @@ function vectorizeSettlements(isiImage, year) {
     scale: EXPORT_SCALE
   });
 
-  // Add metadata properties
+  // Add metadata properties (all logic must use ee.* server-side objects)
   return withStats.map(function(feature) {
     var isi = ee.Number(feature.get('isi_score'));
-    var riskLevel = isi.lt(0.2).multiply(0)  // low
-      .add(isi.gte(0.2).and(isi.lte(0.5)).multiply(1))  // medium
-      .add(isi.gt(0.5).multiply(2));  // high
 
-    var riskLabels = ['low', 'medium', 'high'];
-    var riskLabel = riskLevel.format('%.0f').split('').map(function(v) {
-      return ee.String(ee.Algorithms.If(ee.Number(v).eq(0), 'low',
-        ee.Algorithms.If(ee.Number(v).eq(1), 'medium', 'high')));
-    }).get(0);
+    // ee.Algorithms.If is required — JS .split().map() does not work server-side
+    var riskLabel = ee.Algorithms.If(
+      isi.lt(0.2), 'low',
+      ee.Algorithms.If(isi.lte(0.5), 'medium', 'high')
+    );
 
     var areaHa = ee.Number(feature.geometry().area()).divide(10000);
     var popProxy = areaHa.multiply(8500).multiply(isi.multiply(0.6).add(0.4));
 
+    // system:index is a string; parse + format avoids ee.String.slice() edge cases
+    var indexStr = ee.Number.parse(feature.get('system:index')).add(1).format('%04d');
+
     return feature.set({
-      'id': ee.String('DAR-').cat(ee.String(year)).cat('-').cat(
-        ee.String(feature.get('system:index')).slice(0, 4)),
-      'name': ee.String('Settlement ').cat(ee.String(feature.get('system:index'))),
+      'id': ee.String('DAR-').cat(ee.String(year)).cat('-').cat(indexStr),
+      'name': ee.String('Settlement ').cat(indexStr),
       'year': year,
       'risk_level': riskLabel,
       'area_ha': areaHa,
