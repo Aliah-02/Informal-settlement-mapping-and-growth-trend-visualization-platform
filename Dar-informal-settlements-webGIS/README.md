@@ -75,6 +75,7 @@ Dar-informal-settlements-webGIS/
 │   ├── css/style.css
 │   └── js/                      # map.js, slider.js, api.js, dashboard.js
 ├── gee/                         # Google Earth Engine scripts
+│   └── landsat5-7-early-years/  # Dedicated L5+L7 pipeline for 2005 & 2010
 ├── nginx/nginx.conf
 ├── docker-compose.yml
 └── .env.example
