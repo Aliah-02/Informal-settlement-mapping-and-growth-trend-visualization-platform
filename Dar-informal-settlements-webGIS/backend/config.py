@@ -86,19 +86,15 @@ class Settings(BaseSettings):
 
     @model_validator(mode="before")
     @classmethod
-    def strip_frontend_url(cls, data):
+    def apply_env(cls, data):
         if isinstance(data, dict) and data.get("frontend_url"):
             data["frontend_url"] = str(data["frontend_url"]).strip().rstrip("/")
-        return data
-
-    @model_validator(mode="after")
-    def apply_cloud_env(self) -> "Settings":
-        db = os.getenv("DATABASE_URL")
-        if db:
+        db = os.getenv("DATABASE_URL", "").strip()
+        if db and isinstance(data, dict):
             sync = _normalize_database_url(db)
-            self.database_url_sync = sync
-            self.database_url = sync.replace("postgresql://", "postgresql+asyncpg://", 1)
-        return self
+            data["database_url_sync"] = sync
+            data["database_url"] = sync.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return data
 
     def cors_origins_list(self) -> list[str]:
         """Allowed browser origins for Vercel + local dev."""

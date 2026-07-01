@@ -1,6 +1,6 @@
 # Connect Render + Vercel
 
-## Your live URLs
+## Your URLs
 
 | Service | URL |
 |---------|-----|
@@ -9,68 +9,89 @@
 
 ---
 
-## Fix: `Dockerfile: no such file or directory`
+## Current status (what your health JSON means)
 
-Render could not find the Dockerfile because **Root Directory** and **Dockerfile path** did not match.
+```json
+{
+  "status": "healthy",
+  "data_source": "geojson",
+  "database": { "connected": false },
+  "data_years_available": [2005, 2010, 2015, 2020, 2026]
+}
+```
 
-### Option A — Root Directory empty (recommended)
+| Field | Meaning |
+|-------|---------|
+| `status: healthy` | API is running — good |
+| `data_source: geojson` | Serving map data from bundled files (works on Vercel) |
+| `database.connected: false` | PostgreSQL not linked yet |
+| `data_years_available: 5 yrs` | Map and dashboard will work |
 
-In Render → your web service → **Settings**:
-
-| Setting | Value |
-|---------|-------|
-| **Root Directory** | *(leave empty)* |
-| **Dockerfile Path** | `Dockerfile` |
-| **Docker Context** | `.` |
-
-The repo now has `Dockerfile` at the **repository root** that builds the backend.
-
-### Option B — Root Directory = subfolder
-
-| Setting | Value |
-|---------|-------|
-| **Root Directory** | `Dar-informal-settlements-webGIS` |
-| **Dockerfile Path** | `backend/Dockerfile` |
-| **Docker Context** | `backend` |
+**Your Vercel map should already show settlement polygons** using GeoJSON fallback.
 
 ---
 
-## Render environment variables
+## Enable PostGIS (optional upgrade)
 
-| Key | Value |
-|-----|-------|
-| `FRONTEND_URL` | `https://informal-settlement-mapping-and-gro.vercel.app` |
-| `DEBUG` | `false` |
-| `USE_POSTGIS` | `true` |
-| `AUTO_IMPORT_ON_STARTUP` | `true` |
-| `PYTHONPATH` | `/app` |
+### Step 1 — Create PostgreSQL on Render
 
-Delete empty `CORS_ORIGINS`. **Start Command** = blank.
+1. Render Dashboard → **New** → **PostgreSQL**
+2. Name: `darinformal-db`, Plan: Free, Region: same as API
+3. Create database
 
-Then: **Manual Deploy → Clear build cache & deploy**
+### Step 2 — Link DATABASE_URL to your web service
 
-### Test API
+1. Open **informal-settlement-mapping-and-growth-sm5w** (web service)
+2. **Environment** → **Add Environment Variable**
+3. Key: `DATABASE_URL`
+4. Value: click **Add from database** → select `darinformal-db` → **Internal Database URL**
+5. Save → **Manual Deploy**
+
+### Step 3 — Verify
+
+After redeploy (~2 min), check:
 
 ```
 https://informal-settlement-mapping-and-growth-sm5w.onrender.com/api/health
 ```
 
+Expected after PostGIS links:
+
+```json
+{
+  "data_source": "postgis",
+  "database": {
+    "configured": true,
+    "connected": true,
+    "settlement_count": 119
+  }
+}
+```
+
+On first boot the API auto-imports GeoJSON into PostGIS.
+
 ---
 
-## Vercel environment variable
+## Vercel connection
 
-**Settings → Environment Variables:**
+**Environment variable:**
 
-| Key | Value |
-|-----|-------|
-| `DARINFORMAL_API_URL` | `https://informal-settlement-mapping-and-growth-sm5w.onrender.com/api` |
+```
+DARINFORMAL_API_URL=https://informal-settlement-mapping-and-growth-sm5w.onrender.com/api
+```
 
-Redeploy Vercel after saving.
+**Render environment:**
+
+```
+FRONTEND_URL=https://informal-settlement-mapping-and-gro.vercel.app
+```
 
 ---
 
-## Verify
+## Render Docker settings
 
-1. API health returns `"status": "healthy"` and 5 data years
-2. Vercel map shows settlement polygons
-3. No CORS errors in browser console (F12)
+| Setting | Value |
+|---------|-------|
+| Root Directory | *(empty)* |
+| Dockerfile Path | `Dockerfile` |
+| Start Command | *(empty)* |
