@@ -18,7 +18,15 @@
       "problemMatcher": []
     },
     {
-      "label": "DarInformal: Import data to PostGIS",
+      "label": "DarInformal: Import ALL data (GeoJSON + rasters)",
+      "type": "shell",
+      "command": ".venv\\Scripts\\python scripts\\import_all_data.py",
+      "windows": { "command": ".venv\\Scripts\\python scripts\\import_all_data.py" },
+      "linux": { "command": ".venv/bin/python scripts/import_all_data.py" },
+      "osx": { "command": ".venv/bin/python scripts/import_all_data.py" },
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": []
+    },
       "type": "shell",
       "command": "${workspaceFolder}/backend/.venv/bin/python scripts/import_geojson_to_postgis.py --all && ${workspaceFolder}/backend/.venv/bin/python scripts/compute_yearly_metrics.py",
       "windows": {

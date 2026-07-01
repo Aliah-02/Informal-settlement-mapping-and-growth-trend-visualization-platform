@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     base_dir: Path = Path(__file__).resolve().parent
     data_dir: Path = base_dir / "data"
     geojson_dir: Path = data_dir / "geojson"
+    raster_dir: Path = data_dir / "raster"
 
     # Dar es Salaam AOI bounds (approximate metropolitan extent)
     aoi_west: float = 39.05
