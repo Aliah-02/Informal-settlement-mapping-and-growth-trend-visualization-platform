@@ -93,9 +93,9 @@ CREATE TABLE IF NOT EXISTS import_log (
     imported_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ── GeoServer-friendly view (all years, styled by risk_level) ─────────────────
+-- ── All-years view for analytics exports ─────────────────────────────────────
 
-CREATE OR REPLACE VIEW v_settlements_wms AS
+CREATE OR REPLACE VIEW v_settlements_all AS
 SELECT
     id,
     settlement_id,
@@ -115,4 +115,4 @@ FROM settlements;
 COMMENT ON TABLE settlements IS 'Informal settlement polygons with ISI attributes — primary spatial store';
 COMMENT ON TABLE yearly_metrics IS 'Pre-computed dashboard metrics per analysis year';
 COMMENT ON TABLE change_detection IS 'Temporal settlement change records between analysis years';
-COMMENT ON VIEW v_settlements_wms IS 'GeoServer WMS/WFS publishing view';
+COMMENT ON VIEW v_settlements_all IS 'All settlement polygons across analysis years';

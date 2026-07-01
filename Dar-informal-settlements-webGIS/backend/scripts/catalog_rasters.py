@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
-"""Validate and catalog ISI GeoTIFF rasters; optionally publish to GeoServer.
-
-Expected filenames (any of these patterns per year):
-  isi_2005.tif
-  darinformal_2005.tif
-  indices_2005.tif
-  settlements_2005.tif   (if raster named like geojson — still detected by year)
+"""Validate and catalog ISI GeoTIFF rasters from backend/data/raster/.
 
 Usage:
-    python scripts/publish_rasters_geoserver.py --scan
-    python scripts/publish_rasters_geoserver.py --publish
-    python scripts/publish_rasters_geoserver.py --publish --year 2020
+    python scripts/catalog_rasters.py
+    python scripts/catalog_rasters.py --year 2020
 """
 
 from __future__ import annotations
@@ -18,7 +11,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import os
 import re
 import sys
 from pathlib import Path
@@ -26,8 +18,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import rasterio
-import requests
-from requests.auth import HTTPBasicAuth
 
 from config import get_settings
 
@@ -83,60 +73,6 @@ def write_manifest(raster_dir: Path, catalog: dict[int, dict]) -> Path:
     return manifest_path
 
 
-def publish_to_geoserver(year: int, tif_path: Path) -> bool:
-    """Publish a single GeoTIFF as GeoServer coverage layer isi_raster_{year}."""
-    gs_url = os.getenv("GEOSERVER_URL", "http://localhost:8080/geoserver")
-    user = os.getenv("GEOSERVER_USER", "admin")
-    password = os.getenv("GEOSERVER_PASSWORD", "geoserver")
-    workspace = os.getenv("GEOSERVER_WORKSPACE", "darinformal")
-    auth = HTTPBasicAuth(user, password)
-
-    # GeoServer needs file:// URL accessible FROM the GeoServer container/host
-    geoserver_data_path = os.getenv("GEOSERVER_RASTER_PATH", str(tif_path.resolve()))
-    file_url = Path(geoserver_data_path).as_uri()
-
-    store_name = f"isi_raster_{year}"
-    layer_name = f"isi_raster_{year}"
-
-    store_xml = f"""<coverageStore>
-  <name>{store_name}</name>
-  <type>GeoTIFF</type>
-  <enabled>true</enabled>
-  <workspace><name>{workspace}</name></workspace>
-  <url>{file_url}</url>
-</coverageStore>"""
-
-    r = requests.post(
-        f"{gs_url}/rest/workspaces/{workspace}/coveragestores",
-        data=store_xml,
-        auth=auth,
-        headers={"Content-Type": "text/xml"},
-    )
-    if r.status_code not in (200, 201, 409):
-        logger.error("Coverage store %s failed: %s %s", store_name, r.status_code, r.text)
-        return False
-
-    coverage_xml = f"""<coverage>
-  <name>{layer_name}</name>
-  <nativeName>{layer_name}</nativeName>
-  <title>ISI Raster {year}</title>
-  <enabled>true</enabled>
-  <srs>EPSG:4326</srs>
-</coverage>"""
-
-    r2 = requests.post(
-        f"{gs_url}/rest/workspaces/{workspace}/coveragestores/{store_name}/coverages",
-        data=coverage_xml,
-        auth=auth,
-        headers={"Content-Type": "text/xml"},
-    )
-    if r2.status_code in (200, 201, 409):
-        logger.info("  ✓ Published raster layer %s:%s", workspace, layer_name)
-        return True
-    logger.error("Coverage %s failed: %s %s", layer_name, r2.status_code, r2.text)
-    return False
-
-
 def scan_rasters(years: list[int] | None = None) -> dict[int, dict]:
     settings = get_settings()
     years = years or settings.analysis_years
@@ -165,9 +101,7 @@ def scan_rasters(years: list[int] | None = None) -> dict[int, dict]:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Catalog and publish ISI GeoTIFF rasters")
-    parser.add_argument("--scan", action="store_true", help="Scan and validate rasters only")
-    parser.add_argument("--publish", action="store_true", help="Publish rasters to GeoServer")
+    parser = argparse.ArgumentParser(description="Catalog ISI GeoTIFF rasters")
     parser.add_argument("--year", type=int, help="Process a single year")
     args = parser.parse_args()
 
@@ -176,18 +110,8 @@ def main():
 
     logger.info("Raster directory: %s", settings.raster_dir)
     catalog = scan_rasters(years)
-
-    if args.scan or not args.publish:
-        if not catalog:
-            logger.info("No rasters found. Place .tif files in %s", settings.raster_dir)
-        return
-
     if not catalog:
-        sys.exit(1)
-
-    logger.info("Publishing %d raster(s) to GeoServer...", len(catalog))
-    ok = sum(publish_to_geoserver(year, Path(meta["path"])) for year, meta in catalog.items())
-    logger.info("Published %d / %d raster layers", ok, len(catalog))
+        logger.info("No rasters found. Place .tif files in %s", settings.raster_dir)
 
 
 if __name__ == "__main__":

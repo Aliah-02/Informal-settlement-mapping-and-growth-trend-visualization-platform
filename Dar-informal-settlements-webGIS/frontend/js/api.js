@@ -50,10 +50,6 @@ const API = (() => {
       return request('/aoi');
     },
 
-    async getGeoserverConfig() {
-      return request('/geoserver');
-    },
-
     getGrowthTrendCsvUrl() {
       return `${BASE_URL}/metrics/trend/csv`;
     },

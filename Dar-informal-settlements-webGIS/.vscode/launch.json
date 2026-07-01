@@ -11,8 +11,7 @@
       "envFile": "${workspaceFolder}/.env",
       "env": {
         "DEBUG": "true",
-        "USE_POSTGIS": "true",
-        "GEOSERVER_PUBLIC_URL": "http://localhost:8080/geoserver"
+        "USE_POSTGIS": "true"
       },
       "jinja": true,
       "justMyCode": false,

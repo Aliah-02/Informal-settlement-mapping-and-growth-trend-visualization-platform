@@ -4,7 +4,7 @@ Deploy the full WebGIS stack on **free tiers**:
 - **Backend (FastAPI + PostGIS)** → [Render](https://render.com)
 - **Frontend (Leaflet + Dashboard)** → [Vercel](https://vercel.com)
 
-> GeoServer WMS is **not** included on free cloud tiers. The app uses **API GeoJSON** mode automatically in production.
+Settlement polygons are served as **API GeoJSON** from PostGIS — no separate map tile server required.
 
 ---
 
@@ -35,7 +35,7 @@ Vercel (frontend)  ──HTTPS──►  Render (FastAPI API)
 4. Set **Root Directory**: `Dar-informal-settlements-webGIS`
 5. Render reads `render.yaml` and creates:
    - PostgreSQL database `darinformal-db`
-   - Web service `darinformal-api` (Docker)
+   - Web service `darinformal-api` (container from `backend/Dockerfile`)
 
 ### Option B: Manual Web Service
 
@@ -102,25 +102,20 @@ curl -O https://darinformal-api.onrender.com/api/metrics/trend/csv
 
 ```javascript
 window.DARINFORMAL_API_URL = 'https://darinformal-api.onrender.com/api';
-window.DARINFORMAL_DEFAULT_RENDER_MODE = 'geojson';
 ```
 
 ### Verify frontend
 
 1. Open your Vercel URL
-2. Map should load with settlement polygons
+2. Map loads settlement polygons from the API
 3. Time slider switches years
-4. Click **⬇ CSV Report** in dashboard → downloads growth trend CSV
+4. Click **⬇ CSV Report** → downloads growth trend CSV
 
 ---
 
 ## Part 3 — Connect Frontend ↔ Backend
 
-After both are deployed:
-
 ### 1. Update Render CORS
-
-In Render dashboard → `darinformal-api` → **Environment**:
 
 ```
 FRONTEND_URL=https://darinformal-xxxx.vercel.app
@@ -130,8 +125,6 @@ CORS_ORIGINS=["https://darinformal-xxxx.vercel.app"]
 Redeploy API service.
 
 ### 2. Confirm Vercel API URL
-
-In Vercel → **Settings** → **Environment Variables**:
 
 ```
 DARINFORMAL_API_URL=https://darinformal-api.onrender.com/api
@@ -144,9 +137,9 @@ Redeploy frontend.
 | Check | Expected |
 |-------|----------|
 | `GET /api/health` | `"data_source": "postgis"` |
-| Map loads on Vercel | Settlement polygons visible |
+| Map on Vercel | Settlement polygons visible |
 | Time slider | Years 2005–2026 switch |
-| Dashboard charts | Bar/line charts populated |
+| Dashboard charts | Populated |
 | CSV download | `darinformal_growth_trend_report.csv` |
 | Change detection CSV | Available after applying change mode |
 
@@ -159,49 +152,18 @@ Redeploy frontend.
 | `GET /api/metrics/trend/csv` | Full growth trend report |
 | `GET /api/change/{from}/{to}/csv` | Change detection report |
 
-Frontend download button calls the trend CSV endpoint directly.
-
 ---
 
 ## Importing Your Own GEE Data (Production)
 
-### GeoJSON
-
-1. SSH is not available on Render free — use **one-time import** before deploy OR admin endpoint:
+Use the Render Postgres **external connection string** from the dashboard:
 
 ```bash
-# Local: import to Render Postgres using external connection string
 DATABASE_URL_SYNC="postgresql://user:pass@host/darinformal" \
   python scripts/import_geojson_to_postgis.py --all
 ```
 
-Get external DB URL from Render → PostgreSQL → **Connections** → **External Database URL**
-
-### Raster (GeoTIFF)
-
-GeoServer is not on Render free tier. Options:
-- Use **API GeoJSON** mode (default on Vercel)
-- Host GeoServer separately (Railway, VPS) and set `GEOSERVER_PUBLIC_URL`
-
----
-
-## Environment files reference
-
-### Render (`darinformal-api`)
-
-```env
-DATABASE_URL=<auto>
-USE_POSTGIS=true
-AUTO_IMPORT_ON_STARTUP=true
-FRONTEND_URL=https://darinformal.vercel.app
-CORS_ORIGINS=["https://darinformal.vercel.app"]
-```
-
-### Vercel (`darinformal-frontend`)
-
-```env
-DARINFORMAL_API_URL=https://darinformal-api.onrender.com/api
-```
+GeoTIFF rasters can be cataloged locally with `python scripts/catalog_rasters.py` (manifest only; map uses vector GeoJSON from PostGIS).
 
 ---
 
@@ -213,8 +175,7 @@ DARINFORMAL_API_URL=https://darinformal-api.onrender.com/api
 | API cold start slow | Normal on Render free — wait 30s |
 | Empty map | Check `/api/health` — re-import GeoJSON to Render Postgres |
 | CSV download fails | Ensure API URL correct in Vercel env |
-| PostGIS extension error | Render Postgres supports `CREATE EXTENSION postgis` — check logs |
-| WMS not working | Expected on free tier — use **API GeoJSON** map mode |
+| PostGIS extension error | Check Render logs for `CREATE EXTENSION postgis` |
 
 ---
 
@@ -223,22 +184,17 @@ DARINFORMAL_API_URL=https://darinformal-api.onrender.com/api
 | Feature | Local (VS Code) | Render + Vercel |
 |---------|-----------------|-----------------|
 | PostGIS | ✅ | ✅ Render Postgres |
-| GeoServer WMS | ✅ optional | ❌ not on free tier |
+| API GeoJSON map | ✅ | ✅ |
 | CSV reports | ✅ | ✅ |
-| Hybrid map mode | ✅ | API GeoJSON only |
-| Docker | ✅ | Render uses Dockerfile |
+| Analytics dashboard | ✅ | ✅ |
 
 ---
 
 ## Quick deploy commands
 
 ```bash
-# Clone
 git clone https://github.com/Aliah-02/Informal-settlement-mapping-and-growth-trend-visualization-platform.git
-
-# Test CSV locally
 curl -O http://localhost:8000/api/metrics/trend/csv
-
-# Render: push to GitHub → connect Blueprint
+# Render: push → connect Blueprint
 # Vercel: import frontend/ → set DARINFORMAL_API_URL → deploy
 ```

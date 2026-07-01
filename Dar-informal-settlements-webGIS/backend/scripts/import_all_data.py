@@ -37,7 +37,6 @@ def main():
     parser = argparse.ArgumentParser(description="Import GeoJSON + rasters into DarInformal")
     parser.add_argument("--skip-geojson", action="store_true")
     parser.add_argument("--skip-raster", action="store_true")
-    parser.add_argument("--publish-raster", action="store_true", help="Publish rasters to GeoServer")
     parser.add_argument("--year", type=int, help="Import single year only")
     args = parser.parse_args()
 
@@ -60,13 +59,11 @@ def main():
         run_script("compute_yearly_metrics.py")
 
     if not args.skip_raster:
-        logger.info("=== Step 2: GeoTIFF scan ===")
-        raster_args = ["--scan"]
+        logger.info("=== Step 2: GeoTIFF catalog ===")
+        raster_args = []
         if args.year:
             raster_args += ["--year", str(args.year)]
-        if args.publish_raster:
-            raster_args = ["--publish"] + (["--year", str(args.year)] if args.year else [])
-        run_script("publish_rasters_geoserver.py", *raster_args)
+        run_script("catalog_rasters.py", *raster_args)
 
     logger.info("=== Import complete ===")
     logger.info("Restart API, then verify: curl http://localhost:8000/api/health")

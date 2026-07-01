@@ -14,7 +14,6 @@ from config import get_settings
 from db.database import check_connection
 from models.schemas import (
     ChangeDetectionResponse,
-    HealthResponse,
     RiskLayerResponse,
     TrendResponse,
 )
@@ -67,7 +66,7 @@ app = FastAPI(
     description=(
         "Informal Settlement Mapping and Growth Trend Visualization API "
         "for Dar es Salaam, Tanzania (2005–2026). "
-        "PostGIS-backed with GeoServer WMS integration."
+        "PostGIS-backed GeoJSON delivery for WebGIS clients."
     ),
     lifespan=lifespan,
 )
@@ -106,28 +105,6 @@ async def health_check():
             "settlement_count": db_status.get("settlement_count", 0),
         },
         "data_years_available": years,
-        "geoserver": {
-            "workspace": settings.geoserver_workspace,
-            "layer": settings.geoserver_layer,
-            "wms_url": f"{settings.geoserver_public_url}/{settings.geoserver_workspace}/wms",
-        },
-    }
-
-
-@app.get("/api/geoserver", tags=["System"])
-async def geoserver_config():
-    """GeoServer WMS/WFS connection info for frontend."""
-    ws = settings.geoserver_workspace
-    layer = settings.geoserver_layer
-    base = settings.geoserver_public_url.rstrip("/")
-    return {
-        "workspace": ws,
-        "layer": layer,
-        "layer_full": f"{ws}:{layer}",
-        "wms_url": f"{base}/{ws}/wms",
-        "wfs_url": f"{base}/{ws}/wfs",
-        "risk_style": "settlements_risk",
-        "risk_colors": {"low": "#22c55e", "medium": "#f59e0b", "high": "#ef4444"},
     }
 
 
@@ -164,11 +141,6 @@ async def get_risk_layer(year: int):
                 "low": "#22c55e",
                 "medium": "#f59e0b",
                 "high": "#ef4444",
-            },
-            "wms": {
-                "url": f"{settings.geoserver_public_url}/{settings.geoserver_workspace}/wms",
-                "layer": f"{settings.geoserver_workspace}:{settings.geoserver_layer}",
-                "cql_filter": f"year={year}",
             },
         },
     )

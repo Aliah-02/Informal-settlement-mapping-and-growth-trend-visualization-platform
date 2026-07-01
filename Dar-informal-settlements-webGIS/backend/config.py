@@ -37,14 +37,6 @@ class Settings(BaseSettings):
     # Production frontend (Vercel) — used for CORS
     frontend_url: str = ""
 
-    # GeoServer (optional — not available on Render free tier)
-    geoserver_url: str = "http://localhost:8080/geoserver"
-    geoserver_public_url: str = "/geoserver"
-    geoserver_workspace: str = "darinformal"
-    geoserver_layer: str = "settlements"
-    geoserver_user: str = "admin"
-    geoserver_password: str = "geoserver"
-
     # CORS
     cors_origins: list[str] = [
         "http://localhost",
