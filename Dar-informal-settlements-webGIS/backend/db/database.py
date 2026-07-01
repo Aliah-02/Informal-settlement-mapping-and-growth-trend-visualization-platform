@@ -66,17 +66,22 @@ def check_connection(settings: Settings | None = None) -> dict:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
             version = conn.execute(text("SELECT PostGIS_Version()")).scalar()
-            settlement_count = conn.execute(
-                text("SELECT COUNT(*) FROM settlements")
-            ).scalar()
-            years = conn.execute(
-                text("SELECT DISTINCT year FROM settlements ORDER BY year")
-            ).fetchall()
+            try:
+                settlement_count = conn.execute(
+                    text("SELECT COUNT(*) FROM settlements")
+                ).scalar()
+                years = conn.execute(
+                    text("SELECT DISTINCT year FROM settlements ORDER BY year")
+                ).fetchall()
+                year_list = [row[0] for row in years]
+            except Exception:
+                settlement_count = 0
+                year_list = []
         return {
             "connected": True,
             "postgis_version": version,
             "settlement_count": settlement_count,
-            "years": [row[0] for row in years],
+            "years": year_list,
         }
     except Exception as exc:
         logger.warning("PostGIS connection failed: %s", exc)

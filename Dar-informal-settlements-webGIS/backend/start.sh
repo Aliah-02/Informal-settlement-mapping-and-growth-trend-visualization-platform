@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
-# Render production entrypoint — no --reload, bind to $PORT
-set -euo pipefail
+# Render production entrypoint
+set -uo pipefail
 
 cd /app
 export PYTHONPATH=/app
 
 PORT="${PORT:-10000}"
-echo "=== DarInformal API | port ${PORT} | PYTHONPATH=${PYTHONPATH} ==="
+echo "=== DarInformal API starting on port ${PORT} ==="
+echo "FRONTEND_URL=${FRONTEND_URL:-not set}"
 
-# Bootstrap PostGIS (import sample data on first run)
 python -c "from scripts.bootstrap_db import bootstrap_database; bootstrap_database()" \
-  || echo "Bootstrap skipped (non-fatal)"
+  || echo "Bootstrap warning (continuing — GeoJSON fallback available)"
 
-exec uvicorn main:app \
-  --host 0.0.0.0 \
-  --port "${PORT}" \
-  --proxy-headers \
-  --forwarded-allow-ips="*"
+echo "Starting uvicorn..."
+exec uvicorn main:app --host 0.0.0.0 --port "${PORT}"

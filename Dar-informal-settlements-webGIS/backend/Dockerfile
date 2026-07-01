@@ -3,7 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Bust Docker layer cache when app code changes (Render was serving stale config.py)
-ARG APP_REVISION=2026-07-01-v2
+ARG APP_REVISION=2026-07-01-v3-main
 RUN echo "Build revision: ${APP_REVISION}"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

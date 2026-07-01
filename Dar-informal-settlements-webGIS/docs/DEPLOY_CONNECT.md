@@ -1,88 +1,67 @@
-# Connect Render (API) + Vercel (Frontend)
+# Connect Render + Vercel (your deployment)
 
-Simple 2-step cloud setup for the WebGIS.
+## Your URLs
 
-```text
-Browser  →  Vercel (map + dashboard)
-                │
-                │  HTTPS  /api/risk/2020  etc.
-                ▼
-            Render (FastAPI + PostGIS)
-```
+| Service | URL |
+|---------|-----|
+| **Frontend (Vercel)** | https://informal-settlement-mapping-and-gro.vercel.app |
+| **Backend (Render)** | `https://YOUR-SERVICE-NAME.onrender.com` |
 
 ---
 
-## Step 1 — Render (backend)
+## Step 1 — Render must use branch `main`
 
-1. [Render Dashboard](https://dashboard.render.com/) → **New** → **Blueprint**
-2. Connect your GitHub repo
-3. **Root Directory:** `Dar-informal-settlements-webGIS`
-4. After deploy, open **darinformal-api** → **Environment** and set:
+The fixes are on **`main`**. In Render:
 
-| Key | Example value |
-|-----|----------------|
-| `FRONTEND_URL` | `https://your-project.vercel.app` |
+**Settings → Build & Deploy → Branch** → set to **`main`**
 
-5. **Delete** `CORS_ORIGINS` if it exists and is empty.
-6. **Start Command** — leave **blank** (uses Docker `start.sh`).
-7. **Manual Deploy** → **Clear build cache & deploy** (important after code updates).
+Then: **Manual Deploy → Clear build cache & deploy**
 
-8. Test:
-   ```
-   https://YOUR-API.onrender.com/api/health
-   ```
-   Expect: `"status": "healthy"`
+### Render environment (darinformal-api)
 
-Copy your API URL: `https://YOUR-API.onrender.com/api`
+| Key | Value |
+|-----|-------|
+| `FRONTEND_URL` | `https://informal-settlement-mapping-and-gro.vercel.app` |
+| `DEBUG` | `false` |
+| `USE_POSTGIS` | `true` |
+| `AUTO_IMPORT_ON_STARTUP` | `true` |
+
+**Delete** `CORS_ORIGINS` if empty. **Start Command** must be **blank**.
+
+Test: `https://YOUR-API.onrender.com/api/health`
 
 ---
 
-## Step 2 — Vercel (frontend)
+## Step 2 — Vercel environment
 
-1. [Vercel](https://vercel.com/new) → Import repo
-2. **Root Directory:** `Dar-informal-settlements-webGIS/frontend`
-3. **Environment variable:**
+**Settings → Environment Variables:**
 
 | Key | Value |
 |-----|-------|
 | `DARINFORMAL_API_URL` | `https://YOUR-API.onrender.com/api` |
 
-4. Deploy
+Replace `YOUR-API` with your actual Render service name. Must end with `/api`.
 
-5. Open your Vercel URL — map polygons load from Render API.
-
----
-
-## Step 3 — Link them (after both are live)
-
-Back on Render, set:
-
-```
-FRONTEND_URL=https://your-actual-vercel-url.vercel.app
-```
-
-Redeploy Render API. Vercel preview URLs (`*.vercel.app`) are allowed automatically.
+Redeploy Vercel after saving.
 
 ---
 
-## If Render exits with status 1
+## Step 3 — Verify connection
 
-| Log message | Fix |
-|-------------|-----|
-| `NoDecode` import error | **Clear build cache & deploy** — old Docker image cached |
-| `cors_origins` parse error | Delete empty `CORS_ORIGINS` env var on Render |
-| `No module named config` | Redeploy latest code (fixed in `start.sh`) |
-| No open ports | Clear **Start Command** in Render settings |
+1. Open https://informal-settlement-mapping-and-gro.vercel.app
+2. Top-right badge should show: `API v1.0 · PostGIS · 5 yrs` (or GeoJSON if DB still seeding)
+3. Map shows colored settlement polygons
+4. Time slider changes years
+
+If map is empty but API works: wait 60s (Render cold start) and refresh.
 
 ---
 
-## Local test (VS Code)
+## Still failing?
 
-```bash
-cd Dar-informal-settlements-webGIS
-make setup && make import
-make dev-api      # :8000
-make dev-frontend # :5500
-```
-
-F5 → **DarInformal: Full Stack** in VS Code.
+| Symptom | Fix |
+|---------|-----|
+| `NoDecode` in logs | Wrong branch or cached build — use `main` + clear cache |
+| Exited status 1 | Check Render logs after `Starting uvicorn...` |
+| CORS error in browser | Set `FRONTEND_URL` exactly (no trailing slash) |
+| API offline on Vercel | `DARINFORMAL_API_URL` must include `/api` suffix |

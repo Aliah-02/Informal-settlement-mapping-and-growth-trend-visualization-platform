@@ -1,6 +1,5 @@
-# DarInformal — Render Blueprint (Backend + PostgreSQL)
-# Deploy: https://dashboard.render.com/ → New Blueprint → connect repo
-# Set root directory to: Dar-informal-settlements-webGIS
+# Render Blueprint — Backend + PostgreSQL
+# Root directory in Render dashboard: Dar-informal-settlements-webGIS
 
 databases:
   - name: darinformal-db
@@ -31,8 +30,6 @@ services:
       - key: DEBUG
         value: "false"
       - key: FRONTEND_URL
-        sync: false
-      # Optional — leave unset or use JSON array / comma-separated URLs.
-      # FRONTEND_URL alone is enough for CORS if CORS_ORIGINS is not set.
-      - key: CORS_ORIGINS
-        sync: false
+        value: https://informal-settlement-mapping-and-gro.vercel.app
+      - key: PYTHONPATH
+        value: /app

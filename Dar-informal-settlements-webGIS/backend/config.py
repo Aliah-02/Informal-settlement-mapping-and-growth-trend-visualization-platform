@@ -11,7 +11,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 def _normalize_database_url(url: str) -> str:
     if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql://", 1)
+        url = url.replace("postgres://", "postgresql://", 1)
+    # Render Postgres requires SSL
+    if "sslmode=" not in url and ("render.com" in url or "dpg-" in url):
+        url += "&sslmode=require" if "?" in url else "?sslmode=require"
     return url
 
 
@@ -80,6 +83,13 @@ class Settings(BaseSettings):
     isi_weight_ndvi_inv: float = 0.25
     isi_weight_bsi: float = 0.2
     isi_weight_fragmentation: float = 0.25
+
+    @model_validator(mode="before")
+    @classmethod
+    def strip_frontend_url(cls, data):
+        if isinstance(data, dict) and data.get("frontend_url"):
+            data["frontend_url"] = str(data["frontend_url"]).strip().rstrip("/")
+        return data
 
     @model_validator(mode="after")
     def apply_cloud_env(self) -> "Settings":
