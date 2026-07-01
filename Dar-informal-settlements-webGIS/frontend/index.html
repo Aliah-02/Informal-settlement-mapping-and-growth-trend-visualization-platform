@@ -71,21 +71,18 @@
         <div class="legend-item"><span class="legend-swatch" style="background:#f59e0b"></span> Medium 0.2 – 0.5</div>
         <div class="legend-item"><span class="legend-swatch" style="background:#ef4444"></span> High Risk &gt; 0.5</div>
         <div class="legend-formula">ISI = 0.3·NDBI + 0.25·(1−NDVI) + 0.2·BSI + 0.25·Frag</div>
-        <div class="render-mode-row">
-          <label for="render-mode">Map source</label>
-          <select id="render-mode" class="render-mode-select" aria-label="Map rendering mode">
-            <option value="hybrid" selected>Hybrid (WMS + API)</option>
-            <option value="wms">GeoServer WMS</option>
-            <option value="geojson">API GeoJSON</option>
-          </select>
-        </div>
         <div class="data-source-label" id="data-source-label"></div>
       </div>
     </section>
 
     <!-- Dashboard sidebar -->
     <aside class="dashboard-panel">
-      <h2 class="panel-title">Analytics Dashboard</h2>
+      <div class="panel-header-row">
+        <h2 class="panel-title">Analytics Dashboard</h2>
+        <button id="download-csv-btn" class="btn-download" title="Download growth trend CSV report">
+          ⬇ CSV Report
+        </button>
+      </div>
       <div id="dashboard-error" class="error-banner" style="display:none"></div>
 
       <!-- KPI cards -->
@@ -150,6 +147,8 @@
   <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="js/env.js"></script>
+  <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/map.js"></script>
   <script src="js/slider.js"></script>
@@ -172,15 +171,8 @@
         themeBtn.textContent = isDark ? '🌙' : '☀️';
       });
 
-      // Initialize map + GeoServer config
+      // Initialize map
       DarMap.init('map');
-      await DarMap.initGeoserverConfig();
-
-      // Render mode selector
-      const renderSelect = document.getElementById('render-mode');
-      if (renderSelect) {
-        renderSelect.addEventListener('change', () => DarMap.setRenderMode(renderSelect.value));
-      }
 
       // Health check
       try {
@@ -191,7 +183,7 @@
         statusEl.textContent = `API v${health.version} · ${db} · ${health.data_years_available.length} yrs`;
         statusEl.classList.add('online');
         const srcLabel = document.getElementById('data-source-label');
-        if (srcLabel) srcLabel.textContent = `Data: ${src} | GeoServer WMS ready`;
+        if (srcLabel) srcLabel.textContent = `Data: ${src}`;
       } catch {
         document.getElementById('api-status').textContent = 'API Offline';
         document.getElementById('api-status').classList.add('offline');
@@ -205,6 +197,11 @@
 
       // Initialize dashboard
       await Dashboard.init();
+
+      // CSV report download
+      document.getElementById('download-csv-btn')?.addEventListener('click', () => {
+        Dashboard.downloadGrowthReport();
+      });
 
       // Time slider
       TimeSlider.init({

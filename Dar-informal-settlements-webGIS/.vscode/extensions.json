@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.debugpy",
+    "charliermarsh.ruff",
+    "cweijan.vscode-postgresql-client2",
+    "redhat.vscode-xml",
+    "ritwickdey.LiveServer",
+    "humao.rest-client"
+  ]
+}

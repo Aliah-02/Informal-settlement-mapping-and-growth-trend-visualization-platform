@@ -1,43 +1,24 @@
-.PHONY: help clone setup up down logs import test-api shell-db shell-api
+.PHONY: help setup install import dev-api dev-frontend test-api
 
 help:
-	@echo "DarInformal — available commands:"
-	@echo "  make setup     Copy .env and build images"
-	@echo "  make up        Start full stack (PostGIS + import + API + GeoServer + Nginx)"
-	@echo "  make down      Stop all services"
-	@echo "  make logs      Tail all container logs"
-	@echo "  make import    Re-import GeoJSON into PostGIS"
-	@echo "  make test-api  Curl health endpoint"
-	@echo "  make shell-db  Open psql shell"
+	@echo "DarInformal — local development (no Docker)"
+	@echo "  make setup         Create venv + install Python deps"
+	@echo "  make import        Import GeoJSON → PostGIS + compute metrics"
+	@echo "  make dev-api       Start FastAPI on :8000"
+	@echo "  make dev-frontend  Serve frontend on :5500"
+	@echo "  make test-api      Curl health endpoint"
 
-setup:
-	cp -n .env.example .env 2>/dev/null || true
-	docker compose build
-
-up:
-	docker compose up -d
-	@echo ""
-	@echo "DarInformal is starting..."
-	@echo "  Web app:    http://localhost"
-	@echo "  API docs:   http://localhost:8000/docs"
-	@echo "  GeoServer:  http://localhost:8080/geoserver"
-	@echo ""
-	@echo "First run imports GeoJSON → PostGIS and configures GeoServer (~2 min)."
-
-down:
-	docker compose down
-
-logs:
-	docker compose logs -f
+setup install:
+	cd backend && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 import:
-	docker compose run --rm data-import
+	cd backend && .venv/bin/python scripts/import_all_data.py
+
+dev-api:
+	cd backend && .venv/bin/uvicorn main:app --reload --host 127.0.0.1 --port 8000
+
+dev-frontend:
+	cd frontend && python3 -m http.server 5500 --bind 127.0.0.1
 
 test-api:
 	curl -s http://localhost:8000/api/health | python3 -m json.tool
-
-shell-db:
-	docker compose exec postgis psql -U darinformal -d darinformal
-
-shell-api:
-	docker compose exec api bash

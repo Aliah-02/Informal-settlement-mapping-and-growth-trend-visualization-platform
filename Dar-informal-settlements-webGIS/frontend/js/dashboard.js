@@ -211,12 +211,26 @@ const Dashboard = (() => {
         Area change: <strong>${s.area_change_pct > 0 ? '+' : ''}${s.area_change_pct}%</strong>
         (${changeData.area_change_ha > 0 ? '+' : ''}${changeData.area_change_ha} ha)
       </div>
+      <button class="btn-download change-csv-btn" type="button"
+        onclick="Dashboard.downloadChangeReport(${changeData.from_year}, ${changeData.to_year})">
+        ⬇ Download Change CSV
+      </button>
     `;
   }
 
   function hideChangeSummary() {
     const panel = document.getElementById('change-summary');
     if (panel) panel.classList.remove('visible');
+  }
+
+  async function downloadGrowthReport() {
+    const url = API.getGrowthTrendCsvUrl();
+    await API.downloadFile(url, 'darinformal_growth_trend_report.csv');
+  }
+
+  async function downloadChangeReport(fromYear, toYear) {
+    const url = API.getChangeDetectionCsvUrl(fromYear, toYear);
+    await API.downloadFile(url, `darinformal_change_${fromYear}_${toYear}.csv`);
   }
 
   function setText(id, text) {
@@ -229,7 +243,7 @@ const Dashboard = (() => {
     if (el) { el.textContent = msg; el.style.display = 'block'; }
   }
 
-  return { init, updateForYear, showChangeSummary, hideChangeSummary };
+  return { init, updateForYear, showChangeSummary, hideChangeSummary, downloadGrowthReport, downloadChangeReport };
 })();
 
 window.Dashboard = Dashboard;

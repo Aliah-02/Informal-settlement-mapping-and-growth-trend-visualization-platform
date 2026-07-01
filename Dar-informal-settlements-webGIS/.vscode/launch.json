@@ -1,0 +1,93 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FastAPI Backend",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"],
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "DEBUG": "true",
+        "USE_POSTGIS": "true"
+      },
+      "jinja": true,
+      "justMyCode": false,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "Uvicorn running on .+",
+        "uriFormat": "http://localhost:5500"
+      }
+    },
+    {
+      "name": "Frontend (port 5500)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "http.server",
+      "args": ["5500", "--bind", "127.0.0.1"],
+      "cwd": "${workspaceFolder}/frontend",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Import GeoJSON → PostGIS",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/scripts/import_geojson_to_postgis.py",
+      "args": ["--all"],
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Compute Yearly Metrics",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/scripts/compute_yearly_metrics.py",
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Generate Sample Data",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/data/generate_sample_data.py",
+      "cwd": "${workspaceFolder}/backend/data",
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "DarInformal: Full Stack (Windows)",
+      "configurations": ["FastAPI Backend", "Frontend (port 5500)"],
+      "stopAll": true,
+      "preLaunchTask": "DarInformal: Check PostGIS (Windows)",
+      "presentation": {
+        "group": "darinformal",
+        "order": 1
+      }
+    },
+    {
+      "name": "DarInformal: Full Stack (Linux/macOS)",
+      "configurations": ["FastAPI Backend", "Frontend (port 5500)"],
+      "stopAll": true,
+      "preLaunchTask": "DarInformal: Check PostGIS",
+      "presentation": {
+        "group": "darinformal",
+        "order": 2
+      }
+    },
+    {
+      "name": "DarInformal: API Only",
+      "configurations": ["FastAPI Backend"],
+      "preLaunchTask": "DarInformal: Check PostGIS",
+      "presentation": {
+        "group": "darinformal",
+        "order": 3
+      }
+    }
+  ]
+}

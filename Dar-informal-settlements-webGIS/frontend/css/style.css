@@ -381,9 +381,33 @@ html, body {
 .panel-title {
   font-size: 0.9rem;
   font-weight: 600;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
   color: var(--text-primary);
 }
+
+.panel-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-download {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.btn-download:hover { background: var(--accent-hover); }
+.btn-download:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .error-banner {
   background: rgba(239, 68, 68, 0.15);

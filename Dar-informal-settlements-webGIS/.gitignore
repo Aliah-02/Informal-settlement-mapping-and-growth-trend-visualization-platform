@@ -8,15 +8,11 @@ venv/
 
 # IDE
 .idea/
-.vscode/
 *.swp
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Docker volumes
-postgis_data/
 
 # Logs
 *.log

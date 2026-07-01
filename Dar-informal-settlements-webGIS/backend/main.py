@@ -8,16 +8,16 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from config import get_settings
 from db.database import check_connection
 from models.schemas import (
     ChangeDetectionResponse,
-    HealthResponse,
     RiskLayerResponse,
     TrendResponse,
 )
+from scripts.bootstrap_db import bootstrap_database
 from services.change_detection import detect_changes
 from services.data_source import (
     available_years,
@@ -28,6 +28,7 @@ from services.data_source import (
 )
 from services.loader import to_feature_collection
 from services.metrics import compute_trend, compute_year_metrics
+from services.reports import export_change_detection_csv, export_growth_trend_csv
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,6 +41,10 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: verify PostGIS + data availability; shutdown: cleanup."""
+    try:
+        bootstrap_database()
+    except Exception as exc:
+        logger.warning("Database bootstrap skipped: %s", exc)
     db_status = check_connection(settings)
     years = available_years(settings)
     source = data_source_label(settings)
@@ -61,14 +66,14 @@ app = FastAPI(
     description=(
         "Informal Settlement Mapping and Growth Trend Visualization API "
         "for Dar es Salaam, Tanzania (2005–2026). "
-        "PostGIS-backed with GeoServer WMS integration."
+        "PostGIS-backed GeoJSON delivery for WebGIS clients."
     ),
     lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins + ["*"] if settings.debug else settings.cors_origins,
+    allow_origins=settings.cors_origins + (["*"] if settings.debug else []),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -100,28 +105,6 @@ async def health_check():
             "settlement_count": db_status.get("settlement_count", 0),
         },
         "data_years_available": years,
-        "geoserver": {
-            "workspace": settings.geoserver_workspace,
-            "layer": settings.geoserver_layer,
-            "wms_url": f"{settings.geoserver_public_url}/{settings.geoserver_workspace}/wms",
-        },
-    }
-
-
-@app.get("/api/geoserver", tags=["System"])
-async def geoserver_config():
-    """GeoServer WMS/WFS connection info for frontend."""
-    ws = settings.geoserver_workspace
-    layer = settings.geoserver_layer
-    base = settings.geoserver_public_url.rstrip("/")
-    return {
-        "workspace": ws,
-        "layer": layer,
-        "layer_full": f"{ws}:{layer}",
-        "wms_url": f"{base}/{ws}/wms",
-        "wfs_url": f"{base}/{ws}/wfs",
-        "risk_style": "settlements_risk",
-        "risk_colors": {"low": "#22c55e", "medium": "#f59e0b", "high": "#ef4444"},
     }
 
 
@@ -159,11 +142,6 @@ async def get_risk_layer(year: int):
                 "medium": "#f59e0b",
                 "high": "#ef4444",
             },
-            "wms": {
-                "url": f"{settings.geoserver_public_url}/{settings.geoserver_workspace}/wms",
-                "layer": f"{settings.geoserver_workspace}:{settings.geoserver_layer}",
-                "cql_filter": f"year={year}",
-            },
         },
     )
 
@@ -173,6 +151,39 @@ async def get_metrics_trend():
     """Return time-series growth metrics across all available years."""
     result = compute_trend(settings)
     return TrendResponse(**result)
+
+
+@app.get("/api/metrics/trend/csv", tags=["Analytics", "Reports"])
+async def download_growth_trend_csv():
+    """Download growth trend analytics as CSV report."""
+    trend = compute_trend(settings)
+    if not trend.get("metrics"):
+        raise HTTPException(status_code=404, detail="No trend data available for export")
+    csv_content = export_growth_trend_csv(trend)
+    filename = "darinformal_growth_trend_report.csv"
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/api/change/{from_year}/{to_year}/csv", tags=["Change Detection", "Reports"])
+async def download_change_detection_csv(from_year: int, to_year: int):
+    """Download change detection results as CSV report."""
+    if from_year >= to_year:
+        raise HTTPException(status_code=400, detail="from_year must be less than to_year")
+    try:
+        result = detect_changes(from_year, to_year, settings)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    csv_content = export_change_detection_csv(result)
+    filename = f"darinformal_change_{from_year}_{to_year}.csv"
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get(

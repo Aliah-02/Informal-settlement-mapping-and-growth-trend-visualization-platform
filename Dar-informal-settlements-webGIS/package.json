@@ -1,0 +1,10 @@
+{
+  "name": "darinformal",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node frontend/scripts/build-env.mjs"
+  }
+}
