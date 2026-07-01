@@ -2,7 +2,6 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system dependencies for geospatial libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gdal-bin \
     libgdal-dev \
@@ -10,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libproj-dev \
     gcc \
     g++ \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 ENV GDAL_CONFIG=/usr/bin/gdal-config

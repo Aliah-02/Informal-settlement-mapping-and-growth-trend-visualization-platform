@@ -10,7 +10,7 @@ from shapely.geometry import mapping
 from shapely.ops import unary_union
 
 from config import Settings, get_settings
-from services.loader import load_year
+from services.data_source import load_year
 
 logger = logging.getLogger(__name__)
 

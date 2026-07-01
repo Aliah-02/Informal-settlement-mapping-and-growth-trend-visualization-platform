@@ -1,6 +1,6 @@
 /**
  * DarInformal Map Module
- * Leaflet map initialization, risk layer rendering, and popup interactions.
+ * Hybrid rendering: GeoServer WMS tiles + API GeoJSON for popups/interaction.
  */
 
 const DarMap = (() => {
@@ -17,11 +17,24 @@ const DarMap = (() => {
   };
 
   let map = null;
-  let riskLayer = null;
+  let wmsLayer = null;
+  let vectorLayer = null;
   let changeLayer = null;
-  let aoiBounds = null;
+  let overlayControl = null;
+  let geoserverConfig = null;
+  let renderMode = 'hybrid'; // 'wms' | 'geojson' | 'hybrid'
   let currentYear = 2020;
   let onFeatureClick = null;
+
+  async function initGeoserverConfig() {
+    try {
+      geoserverConfig = await API.getGeoserverConfig();
+    } catch (e) {
+      console.warn('GeoServer config unavailable, using GeoJSON only', e);
+      geoserverConfig = null;
+      renderMode = 'geojson';
+    }
+  }
 
   function init(containerId = 'map') {
     map = L.map(containerId, {
@@ -33,26 +46,22 @@ const DarMap = (() => {
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Base layers
     const darkBase = L.tileLayer(
       'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
       { attribution: '&copy; OSM &copy; CARTO', maxZoom: 19 }
     );
-
     const lightBase = L.tileLayer(
       'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
       { attribution: '&copy; OSM &copy; CARTO', maxZoom: 19 }
     );
-
     const satellite = L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       { attribution: '&copy; Esri', maxZoom: 19 }
     );
 
     darkBase.addTo(map);
-
     L.control.layers(
-      { 'Dark': darkBase, 'Light': lightBase, 'Satellite': satellite },
+      { Dark: darkBase, Light: lightBase, Satellite: satellite },
       {},
       { position: 'bottomleft', collapsed: true }
     ).addTo(map);
@@ -60,15 +69,31 @@ const DarMap = (() => {
     return map;
   }
 
+  function buildWmsLayer(year) {
+    if (!geoserverConfig) return null;
+    const wmsUrl = geoserverConfig.wms_url;
+    const layerName = geoserverConfig.layer_full;
+    return L.tileLayer.wms(wmsUrl, {
+      layers: layerName,
+      styles: geoserverConfig.risk_style || '',
+      format: 'image/png',
+      transparent: true,
+      version: '1.1.1',
+      CQL_FILTER: `year=${year}`,
+      attribution: 'DarInformal / PostGIS / GeoServer',
+    });
+  }
+
   function styleFeature(feature) {
     const risk = feature.properties.risk_level || 'medium';
     const isi = feature.properties.isi_score || 0;
+    const isInteractionLayer = renderMode === 'hybrid';
     return {
       fillColor: RISK_COLORS[risk] || RISK_COLORS.medium,
-      fillOpacity: 0.55 + isi * 0.25,
-      color: RISK_COLORS[risk] || RISK_COLORS.medium,
-      weight: 1.5,
-      opacity: 0.85,
+      fillOpacity: isInteractionLayer ? 0.01 : 0.55 + isi * 0.25,
+      color: isInteractionLayer ? 'transparent' : RISK_COLORS[risk],
+      weight: isInteractionLayer ? 0 : 1.5,
+      opacity: isInteractionLayer ? 0 : 0.85,
     };
   }
 
@@ -98,15 +123,15 @@ const DarMap = (() => {
   function onEachFeature(feature, layer) {
     const props = feature.properties;
     layer.bindPopup(buildPopup(props), { maxWidth: 300, className: 'settlement-popup' });
-
     layer.on({
       mouseover: (e) => {
+        if (renderMode === 'wms') return;
         const l = e.target;
-        l.setStyle({ weight: 3, fillOpacity: 0.75 });
+        l.setStyle({ weight: 3, fillOpacity: renderMode === 'hybrid' ? 0.4 : 0.75 });
         l.bringToFront();
       },
       mouseout: (e) => {
-        if (riskLayer) riskLayer.resetStyle(e.target);
+        if (vectorLayer) vectorLayer.resetStyle(e.target);
       },
       click: () => {
         if (onFeatureClick) onFeatureClick(props);
@@ -114,29 +139,46 @@ const DarMap = (() => {
     });
   }
 
+  function clearRiskLayers() {
+    if (wmsLayer) { map.removeLayer(wmsLayer); wmsLayer = null; }
+    if (vectorLayer) { map.removeLayer(vectorLayer); vectorLayer = null; }
+  }
+
   async function loadRiskLayer(year) {
     currentYear = year;
     showLoading(true);
 
     try {
-      const data = await API.getRiskLayer(year);
+      if (!geoserverConfig) await initGeoserverConfig();
 
-      if (riskLayer) {
-        map.removeLayer(riskLayer);
+      const data = await API.getRiskLayer(year);
+      clearRiskLayers();
+
+      // GeoServer WMS (fast tiled rendering from PostGIS)
+      if (renderMode === 'wms' || renderMode === 'hybrid') {
+        wmsLayer = buildWmsLayer(year);
+        if (wmsLayer) wmsLayer.addTo(map);
       }
 
-      const geojson = {
-        type: 'FeatureCollection',
-        features: data.features,
-      };
+      // API GeoJSON (popups, hover, change detection)
+      if (renderMode === 'geojson' || renderMode === 'hybrid') {
+        vectorLayer = L.geoJSON(
+          { type: 'FeatureCollection', features: data.features },
+          { style: styleFeature, onEachFeature }
+        ).addTo(map);
 
-      riskLayer = L.geoJSON(geojson, {
-        style: styleFeature,
-        onEachFeature,
-      }).addTo(map);
+        if (renderMode === 'geojson' && vectorLayer.getBounds().isValid()) {
+          map.fitBounds(vectorLayer.getBounds(), { padding: [40, 40], maxZoom: 14 });
+        }
+      }
 
-      if (riskLayer.getBounds().isValid()) {
-        map.fitBounds(riskLayer.getBounds(), { padding: [40, 40], maxZoom: 14 });
+      if (wmsLayer) {
+        const b = data.metadata?.bounds;
+        if (b) {
+          map.fitBounds([[b.south, b.west], [b.north, b.east]], { padding: [40, 40], maxZoom: 14 });
+        } else if (vectorLayer && vectorLayer.getBounds().isValid()) {
+          map.fitBounds(vectorLayer.getBounds(), { padding: [40, 40], maxZoom: 14 });
+        }
       }
 
       return data;
@@ -145,30 +187,32 @@ const DarMap = (() => {
     }
   }
 
+  function setRenderMode(mode) {
+    if (!['wms', 'geojson', 'hybrid'].includes(mode)) return;
+    renderMode = mode;
+    if (geoserverConfig === null && mode !== 'geojson') {
+      renderMode = 'geojson';
+    }
+    loadRiskLayer(currentYear);
+  }
+
+  function getRenderMode() {
+    return renderMode;
+  }
+
   async function loadChangeOverlay(fromYear, toYear) {
     showLoading(true);
     try {
       const data = await API.getChangeDetection(fromYear, toYear);
-
-      if (changeLayer) {
-        map.removeLayer(changeLayer);
-        changeLayer = null;
-      }
+      if (changeLayer) { map.removeLayer(changeLayer); changeLayer = null; }
 
       const changeFeatures = [];
-
       data.new_settlements.forEach((s) => {
-        changeFeatures.push({
-          type: 'Feature',
-          geometry: s.geometry,
-          properties: { ...s, change_type: 'new' },
-        });
+        changeFeatures.push({ type: 'Feature', geometry: s.geometry, properties: { ...s, change_type: 'new' } });
       });
-
       data.expanded_settlements.forEach((s) => {
         changeFeatures.push({
-          type: 'Feature',
-          geometry: s.to.geometry,
+          type: 'Feature', geometry: s.to.geometry,
           properties: { ...s.to, change_type: 'expanded', area_change_pct: s.area_change_pct },
         });
       });
@@ -179,7 +223,7 @@ const DarMap = (() => {
           {
             style: (f) => {
               const type = f.properties.change_type;
-              const colors = { new: '#3b82f6', expanded: '#a855f7', contracted: '#06b6d4' };
+              const colors = { new: '#3b82f6', expanded: '#a855f7' };
               return {
                 fillColor: colors[type] || '#888',
                 fillOpacity: 0.4,
@@ -196,7 +240,6 @@ const DarMap = (() => {
           }
         ).addTo(map);
       }
-
       return data;
     } finally {
       showLoading(false);
@@ -204,20 +247,15 @@ const DarMap = (() => {
   }
 
   function clearChangeOverlay() {
-    if (changeLayer) {
-      map.removeLayer(changeLayer);
-      changeLayer = null;
-    }
+    if (changeLayer) { map.removeLayer(changeLayer); changeLayer = null; }
   }
 
   function setAOIBounds(bounds) {
-    aoiBounds = bounds;
     if (bounds) {
-      const rect = L.rectangle(
+      L.rectangle(
         [[bounds.south, bounds.west], [bounds.north, bounds.east]],
         { color: '#60a5fa', weight: 1, fillOpacity: 0, dashArray: '8 4' }
-      );
-      rect.addTo(map);
+      ).addTo(map);
     }
   }
 
@@ -226,25 +264,20 @@ const DarMap = (() => {
     if (el) el.classList.toggle('visible', show);
   }
 
-  function setFeatureClickHandler(handler) {
-    onFeatureClick = handler;
-  }
-
-  function getMap() {
-    return map;
-  }
-
-  function getCurrentYear() {
-    return currentYear;
-  }
+  function setFeatureClickHandler(handler) { onFeatureClick = handler; }
+  function getMap() { return map; }
+  function getCurrentYear() { return currentYear; }
 
   return {
     init,
+    initGeoserverConfig,
     loadRiskLayer,
     loadChangeOverlay,
     clearChangeOverlay,
     setAOIBounds,
     setFeatureClickHandler,
+    setRenderMode,
+    getRenderMode,
     getMap,
     getCurrentYear,
     RISK_COLORS,

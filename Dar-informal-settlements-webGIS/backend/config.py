@@ -21,6 +21,15 @@ class Settings(BaseSettings):
     database_url_sync: str = (
         "postgresql://darinformal:darinformal@localhost:5432/darinformal"
     )
+    use_postgis: bool = True
+
+    # GeoServer
+    geoserver_url: str = "http://localhost:8080/geoserver"
+    geoserver_public_url: str = "/geoserver"  # Nginx proxy path for frontend
+    geoserver_workspace: str = "darinformal"
+    geoserver_layer: str = "settlements"
+    geoserver_user: str = "admin"
+    geoserver_password: str = "geoserver"
 
     # CORS
     cors_origins: list[str] = ["http://localhost", "http://localhost:80", "http://localhost:3000"]
