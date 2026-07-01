@@ -1,0 +1,50 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "DarInformal: Create venv + install deps",
+      "type": "shell",
+      "command": "python -m venv .venv && .venv/Scripts/pip install -r requirements.txt",
+      "windows": {
+        "command": "python -m venv .venv && .venv\\Scripts\\pip install -r requirements.txt"
+      },
+      "linux": {
+        "command": "python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
+      },
+      "osx": {
+        "command": "python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
+      },
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "DarInformal: Import data to PostGIS",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/.venv/bin/python scripts/import_geojson_to_postgis.py --all && ${workspaceFolder}/backend/.venv/bin/python scripts/compute_yearly_metrics.py",
+      "windows": {
+        "command": ".venv\\Scripts\\python scripts\\import_geojson_to_postgis.py --all && .venv\\Scripts\\python scripts\\compute_yearly_metrics.py"
+      },
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "DarInformal: Check PostGIS",
+      "type": "shell",
+      "command": "echo Ensure PostgreSQL/PostGIS is running on port 5432",
+      "problemMatcher": []
+    },
+    {
+      "label": "DarInformal: Setup GeoServer",
+      "type": "shell",
+      "command": "pip install requests && python scripts/setup_geoserver.py",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "GEOSERVER_URL": "http://localhost:8080/geoserver",
+          "POSTGRES_HOST": "localhost"
+        }
+      },
+      "problemMatcher": []
+    }
+  ]
+}

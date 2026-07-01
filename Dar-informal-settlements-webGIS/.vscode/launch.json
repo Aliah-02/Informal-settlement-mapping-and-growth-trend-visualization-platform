@@ -1,0 +1,58 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FastAPI Backend",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "DEBUG": "true",
+        "USE_POSTGIS": "true"
+      },
+      "jinja": true,
+      "justMyCode": false
+    },
+    {
+      "name": "Import GeoJSON → PostGIS",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/scripts/import_geojson_to_postgis.py",
+      "args": ["--all"],
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Compute Yearly Metrics",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/scripts/compute_yearly_metrics.py",
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Generate Sample Data",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/data/generate_sample_data.py",
+      "cwd": "${workspaceFolder}/backend/data",
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "DarInformal: API + Live Server",
+      "configurations": ["FastAPI Backend"],
+      "preLaunchTask": "DarInformal: Check PostGIS",
+      "presentation": {
+        "group": "darinformal",
+        "order": 1
+      }
+    }
+  ]
+}
