@@ -27,6 +27,8 @@
       "options": { "cwd": "${workspaceFolder}/backend" },
       "problemMatcher": []
     },
+    {
+      "label": "DarInformal: Import data to PostGIS",
       "type": "shell",
       "command": "${workspaceFolder}/backend/.venv/bin/python scripts/import_geojson_to_postgis.py --all && ${workspaceFolder}/backend/.venv/bin/python scripts/compute_yearly_metrics.py",
       "windows": {
