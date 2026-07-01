@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config import get_settings
+from db.database import check_connection
 from models.schemas import (
     ChangeDetectionResponse,
     HealthResponse,
@@ -18,7 +19,14 @@ from models.schemas import (
     TrendResponse,
 )
 from services.change_detection import detect_changes
-from services.loader import available_years, filter_settlements, load_year, to_feature_collection
+from services.data_source import (
+    available_years,
+    data_source_label,
+    filter_settlements,
+    load_year,
+    use_postgis,
+)
+from services.loader import to_feature_collection
 from services.metrics import compute_trend, compute_year_metrics
 
 logging.basicConfig(
@@ -31,11 +39,18 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: verify data availability; shutdown: cleanup."""
+    """Startup: verify PostGIS + data availability; shutdown: cleanup."""
+    db_status = check_connection(settings)
     years = available_years(settings)
-    logger.info("DarInformal API starting — data available for years: %s", years)
+    source = data_source_label(settings)
+    logger.info(
+        "DarInformal API starting — source=%s, years=%s, postgis=%s",
+        source,
+        years,
+        db_status.get("connected", False),
+    )
     if not years:
-        logger.warning("No GeoJSON data found in %s", settings.geojson_dir)
+        logger.warning("No settlement data found (PostGIS or GeoJSON)")
     yield
     logger.info("DarInformal API shutting down")
 
@@ -45,7 +60,8 @@ app = FastAPI(
     version=settings.app_version,
     description=(
         "Informal Settlement Mapping and Growth Trend Visualization API "
-        "for Dar es Salaam, Tanzania (2005–2026)."
+        "for Dar es Salaam, Tanzania (2005–2026). "
+        "PostGIS-backed with GeoServer WMS integration."
     ),
     lifespan=lifespan,
 )
@@ -69,24 +85,49 @@ async def value_error_handler(request, exc: ValueError):
     return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
-@app.get("/api/health", response_model=HealthResponse, tags=["System"])
+@app.get("/api/health", tags=["System"])
 async def health_check():
-    """Service health and data availability check."""
+    """Service health with PostGIS connectivity and data availability."""
+    db_status = check_connection(settings)
     years = available_years(settings)
-    return HealthResponse(
-        status="healthy",
-        version=settings.app_version,
-        database="postgis-ready",
-        data_years_available=years,
-    )
+    return {
+        "status": "healthy",
+        "version": settings.app_version,
+        "data_source": data_source_label(settings),
+        "database": {
+            "connected": db_status.get("connected", False),
+            "postgis_version": db_status.get("postgis_version"),
+            "settlement_count": db_status.get("settlement_count", 0),
+        },
+        "data_years_available": years,
+        "geoserver": {
+            "workspace": settings.geoserver_workspace,
+            "layer": settings.geoserver_layer,
+            "wms_url": f"{settings.geoserver_public_url}/{settings.geoserver_workspace}/wms",
+        },
+    }
+
+
+@app.get("/api/geoserver", tags=["System"])
+async def geoserver_config():
+    """GeoServer WMS/WFS connection info for frontend."""
+    ws = settings.geoserver_workspace
+    layer = settings.geoserver_layer
+    base = settings.geoserver_public_url.rstrip("/")
+    return {
+        "workspace": ws,
+        "layer": layer,
+        "layer_full": f"{ws}:{layer}",
+        "wms_url": f"{base}/{ws}/wms",
+        "wfs_url": f"{base}/{ws}/wfs",
+        "risk_style": "settlements_risk",
+        "risk_colors": {"low": "#22c55e", "medium": "#f59e0b", "high": "#ef4444"},
+    }
 
 
 @app.get("/api/risk/{year}", response_model=RiskLayerResponse, tags=["Risk Layers"])
 async def get_risk_layer(year: int):
-    """Return GeoJSON risk layer for a given analysis year.
-
-    Features include ISI scores, risk classification, and population proxy.
-    """
+    """Return GeoJSON risk layer for a given analysis year."""
     if year not in settings.analysis_years:
         raise HTTPException(
             status_code=400,
@@ -107,6 +148,7 @@ async def get_risk_layer(year: int):
             "total_features": len(fc["features"]),
             "average_isi": metrics["average_isi"],
             "total_area_ha": metrics["total_area_ha"],
+            "data_source": data_source_label(settings),
             "risk_breakdown": {
                 "high": metrics["high_risk_count"],
                 "medium": metrics["medium_risk_count"],
@@ -116,6 +158,11 @@ async def get_risk_layer(year: int):
                 "low": "#22c55e",
                 "medium": "#f59e0b",
                 "high": "#ef4444",
+            },
+            "wms": {
+                "url": f"{settings.geoserver_public_url}/{settings.geoserver_workspace}/wms",
+                "layer": f"{settings.geoserver_workspace}:{settings.geoserver_layer}",
+                "cql_filter": f"year={year}",
             },
         },
     )
@@ -134,25 +181,15 @@ async def get_metrics_trend():
     tags=["Change Detection"],
 )
 async def get_change_detection(from_year: int, to_year: int):
-    """Detect informal settlement changes between two years.
-
-    Returns new, expanded, contracted, and stable settlement classifications.
-    """
+    """Detect informal settlement changes between two years."""
     if from_year >= to_year:
-        raise HTTPException(
-            status_code=400,
-            detail="from_year must be less than to_year",
-        )
+        raise HTTPException(status_code=400, detail="from_year must be less than to_year")
     if from_year not in settings.analysis_years or to_year not in settings.analysis_years:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Years must be in {settings.analysis_years}",
-        )
+        raise HTTPException(status_code=400, detail=f"Years must be in {settings.analysis_years}")
     try:
         result = detect_changes(from_year, to_year, settings)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-
     return ChangeDetectionResponse(**result)
 
 
@@ -168,12 +205,8 @@ async def list_settlements(
     """List informal settlements with optional filters and pagination."""
     if risk_level and risk_level not in ("low", "medium", "high"):
         raise HTTPException(status_code=400, detail="risk_level must be low, medium, or high")
-
     if year and year not in settings.analysis_years:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Year must be in {settings.analysis_years}",
-        )
+        raise HTTPException(status_code=400, detail=f"Year must be in {settings.analysis_years}")
 
     try:
         features, total = filter_settlements(
@@ -192,8 +225,30 @@ async def list_settlements(
         "total": total,
         "limit": limit,
         "offset": offset,
+        "data_source": data_source_label(settings),
         "features": features,
     }
+
+
+@app.post("/api/admin/import", tags=["Admin"])
+async def trigger_import():
+    """Trigger GeoJSON → PostGIS import (development convenience endpoint)."""
+    if not settings.debug:
+        raise HTTPException(status_code=403, detail="Import endpoint disabled in production")
+    import subprocess
+    result = subprocess.run(
+        ["python", "scripts/import_geojson_to_postgis.py", "--all"],
+        capture_output=True,
+        text=True,
+        cwd=str(settings.base_dir),
+    )
+    if result.returncode != 0:
+        raise HTTPException(status_code=500, detail=result.stderr)
+    subprocess.run(
+        ["python", "scripts/compute_yearly_metrics.py"],
+        cwd=str(settings.base_dir),
+    )
+    return {"status": "imported", "output": result.stdout}
 
 
 @app.get("/api/aoi", tags=["System"])

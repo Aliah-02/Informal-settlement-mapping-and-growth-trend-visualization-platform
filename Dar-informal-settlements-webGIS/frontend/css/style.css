@@ -344,6 +344,30 @@ html, body {
   font-family: monospace;
 }
 
+.render-mode-row {
+  margin-top: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.render-mode-row label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
+.render-mode-select {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.72rem;
+  width: 100%;
+}
+.data-source-label {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+}
+
 /* Dashboard sidebar */
 .dashboard-panel {
   width: var(--sidebar-width);

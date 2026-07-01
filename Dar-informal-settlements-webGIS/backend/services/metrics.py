@@ -6,16 +6,35 @@ import logging
 from typing import Any, Optional
 
 from config import Settings, get_settings
-from services.loader import available_years, load_year
+from db import repository as db_repo
+from services.data_source import available_years, load_year, use_postgis
 
 logger = logging.getLogger(__name__)
 
 
 def compute_year_metrics(year: int, settings: Settings | None = None) -> dict[str, Any]:
-    """Compute aggregated metrics for a single year."""
+    """Compute aggregated metrics for a single year (PostGIS cache or live)."""
     cfg = settings or get_settings()
-    gdf = load_year(year, cfg)
 
+    if use_postgis(cfg):
+        cached = db_repo.get_yearly_metrics_from_db(year, cfg)
+        if cached:
+            return {
+                "year": cached["year"],
+                "total_settlements": cached["total_settlements"],
+                "total_area_ha": round(cached["total_area_ha"], 2),
+                "average_isi": round(cached["average_isi"], 4),
+                "high_risk_area_ha": round(cached["high_risk_area_ha"], 2),
+                "medium_risk_area_ha": round(cached["medium_risk_area_ha"], 2),
+                "low_risk_area_ha": round(cached["low_risk_area_ha"], 2),
+                "high_risk_count": cached["high_risk_count"],
+                "medium_risk_count": cached["medium_risk_count"],
+                "low_risk_count": cached["low_risk_count"],
+                "population_proxy_total": cached["population_proxy_total"],
+                "growth_rate_pct": None,
+            }
+
+    gdf = load_year(year, cfg)
     high = gdf[gdf["risk_level"] == "high"]
     medium = gdf[gdf["risk_level"] == "medium"]
     low = gdf[gdf["risk_level"] == "low"]

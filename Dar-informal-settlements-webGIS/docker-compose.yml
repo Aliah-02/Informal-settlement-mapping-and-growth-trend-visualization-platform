@@ -1,6 +1,7 @@
 version: '3.9'
 
 services:
+  # ── PostGIS spatial database ──────────────────────────────────────────────
   postgis:
     image: postgis/postgis:16-3.4
     container_name: darinformal-postgis
@@ -11,15 +12,42 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-darinformal}
     volumes:
       - postgis_data:/var/lib/postgresql/data
-      - ./backend/data/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./backend/data/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-darinformal}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-darinformal} -d ${POSTGRES_DB:-darinformal}"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
+  # ── One-shot: GeoJSON → PostGIS import ────────────────────────────────────
+  data-import:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: darinformal-data-import
+    command: >
+      sh -c "
+        for i in $$(seq 1 30); do
+          python -c 'from db.database import check_connection; import sys; sys.exit(0 if check_connection().get(\"connected\") else 1)' && break;
+          sleep 2;
+        done &&
+        python scripts/import_geojson_to_postgis.py --all &&
+        python scripts/compute_yearly_metrics.py &&
+        echo 'PostGIS import complete.'
+      "
+    environment:
+      DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-darinformal}:${POSTGRES_PASSWORD:-darinformal}@postgis:5432/${POSTGRES_DB:-darinformal}
+      USE_POSTGIS: "true"
+    volumes:
+      - ./backend/data/geojson:/app/data/geojson:ro
+    depends_on:
+      postgis:
+        condition: service_healthy
+    restart: "no"
+
+  # ── FastAPI backend ───────────────────────────────────────────────────────
   api:
     build:
       context: ./backend
@@ -29,35 +57,98 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-darinformal}:${POSTGRES_PASSWORD:-darinformal}@postgis:5432/${POSTGRES_DB:-darinformal}
       DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-darinformal}:${POSTGRES_PASSWORD:-darinformal}@postgis:5432/${POSTGRES_DB:-darinformal}
+      USE_POSTGIS: "true"
       DEBUG: ${DEBUG:-false}
+      GEOSERVER_PUBLIC_URL: /geoserver
+      GEOSERVER_WORKSPACE: darinformal
+      GEOSERVER_LAYER: settlements
       CORS_ORIGINS: '["http://localhost","http://localhost:80"]'
     volumes:
       - ./backend:/app
       - ./backend/data/geojson:/app/data/geojson:ro
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
     depends_on:
       postgis:
         condition: service_healthy
+      data-import:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 8
+      start_period: 20s
 
+  # ── GeoServer map server ──────────────────────────────────────────────────
+  geoserver:
+    image: kartoza/geoserver:2.24.2
+    container_name: darinformal-geoserver
+    restart: unless-stopped
+    environment:
+      GEOSERVER_ADMIN_PASSWORD: ${GEOSERVER_PASSWORD:-geoserver}
+      GEOSERVER_ADMIN_USER: ${GEOSERVER_USER:-admin}
+      INITIAL_MEMORY: 512m
+      MAXIMUM_MEMORY: 1024m
+      GEOSERVER_CSRF_DISABLED: "true"
+      CORS_ENABLED: "true"
+    volumes:
+      - geoserver_data:/opt/geoserver/data_dir
+    ports:
+      - "${GEOSERVER_PORT:-8080}:8080"
+    depends_on:
+      data-import:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/geoserver/web/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
+
+  # ── One-shot: GeoServer workspace + PostGIS layer setup ───────────────────
+  geoserver-setup:
+    image: python:3.12-slim
+    container_name: darinformal-geoserver-setup
+    working_dir: /app
+    command: >
+      sh -c "pip install -q requests &&
+             python scripts/setup_geoserver.py"
+    environment:
+      GEOSERVER_URL: http://geoserver:8080/geoserver
+      GEOSERVER_USER: ${GEOSERVER_USER:-admin}
+      GEOSERVER_PASSWORD: ${GEOSERVER_PASSWORD:-geoserver}
+      GEOSERVER_WORKSPACE: darinformal
+      GEOSERVER_LAYER: settlements
+      POSTGRES_HOST: postgis
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-darinformal}
+      POSTGRES_USER: ${POSTGRES_USER:-darinformal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-darinformal}
+    volumes:
+      - ./scripts:/app/scripts:ro
+      - ./geoserver:/app/geoserver:ro
+    depends_on:
+      geoserver:
+        condition: service_healthy
+    restart: "no"
+
+  # ── Nginx: frontend + API proxy + GeoServer proxy ───────────────────────
   nginx:
     image: nginx:1.27-alpine
     container_name: darinformal-nginx
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "${HTTP_PORT:-80}:80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       api:
         condition: service_healthy
+      geoserver-setup:
+        condition: service_completed_successfully
 
 volumes:
   postgis_data:
+  geoserver_data:

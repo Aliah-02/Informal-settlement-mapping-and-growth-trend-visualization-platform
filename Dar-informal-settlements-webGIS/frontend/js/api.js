@@ -49,6 +49,10 @@ const API = (() => {
     async getAOI() {
       return request('/aoi');
     },
+
+    async getGeoserverConfig() {
+      return request('/geoserver');
+    },
   };
 })();
 
