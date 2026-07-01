@@ -8,7 +8,6 @@ venv/
 
 # IDE
 .idea/
-.vscode/
 *.swp
 
 # OS

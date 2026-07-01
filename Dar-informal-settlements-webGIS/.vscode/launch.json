@@ -6,14 +6,30 @@
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
-      "args": ["main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
+      "args": ["main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"],
       "cwd": "${workspaceFolder}/backend",
       "envFile": "${workspaceFolder}/.env",
       "env": {
         "DEBUG": "true",
-        "USE_POSTGIS": "true"
+        "USE_POSTGIS": "true",
+        "GEOSERVER_PUBLIC_URL": "http://localhost:8080/geoserver"
       },
       "jinja": true,
+      "justMyCode": false,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "Uvicorn running on .+",
+        "uriFormat": "http://localhost:5500"
+      }
+    },
+    {
+      "name": "Frontend (port 5500)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "http.server",
+      "args": ["5500", "--bind", "127.0.0.1"],
+      "cwd": "${workspaceFolder}/frontend",
+      "console": "integratedTerminal",
       "justMyCode": false
     },
     {
@@ -46,12 +62,32 @@
   ],
   "compounds": [
     {
-      "name": "DarInformal: API + Live Server",
+      "name": "DarInformal: Full Stack (Windows)",
+      "configurations": ["FastAPI Backend", "Frontend (port 5500)"],
+      "stopAll": true,
+      "preLaunchTask": "DarInformal: Check PostGIS (Windows)",
+      "presentation": {
+        "group": "darinformal",
+        "order": 1
+      }
+    },
+    {
+      "name": "DarInformal: Full Stack (Linux/macOS)",
+      "configurations": ["FastAPI Backend", "Frontend (port 5500)"],
+      "stopAll": true,
+      "preLaunchTask": "DarInformal: Check PostGIS",
+      "presentation": {
+        "group": "darinformal",
+        "order": 2
+      }
+    },
+    {
+      "name": "DarInformal: API Only",
       "configurations": ["FastAPI Backend"],
       "preLaunchTask": "DarInformal: Check PostGIS",
       "presentation": {
         "group": "darinformal",
-        "order": 1
+        "order": 3
       }
     }
   ]

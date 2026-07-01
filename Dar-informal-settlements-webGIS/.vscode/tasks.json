@@ -34,6 +34,12 @@
       "problemMatcher": []
     },
     {
+      "label": "DarInformal: Check PostGIS (Windows)",
+      "type": "shell",
+      "command": "powershell -Command \"Write-Host 'Checking PostgreSQL on port 5432...'; $r = Test-NetConnection -ComputerName localhost -Port 5432 -WarningAction SilentlyContinue; if (-not $r.TcpTestSucceeded) { Write-Warning 'PostgreSQL not reachable on 5432. Start the service: services.msc -> postgresql' } else { Write-Host 'PostgreSQL port 5432 is open.' }\"",
+      "problemMatcher": []
+    },
+    {
       "label": "DarInformal: Setup GeoServer",
       "type": "shell",
       "command": "pip install requests && python scripts/setup_geoserver.py",

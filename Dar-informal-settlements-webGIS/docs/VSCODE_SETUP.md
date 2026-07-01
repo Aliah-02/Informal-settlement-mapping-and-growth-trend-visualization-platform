@@ -135,34 +135,28 @@ curl http://localhost:8000/api/health
 
 ---
 
-## Step 6 — Run backend from VS Code
+## Step 6 — Run backend + frontend together (compound launch)
 
-1. Open **Run and Debug** panel (`Ctrl+Shift+D`)
-2. Select **FastAPI Backend**
-3. Press **F5** (starts uvicorn with hot reload + breakpoints)
+### Windows
 
-API available at:
-- http://localhost:8000/docs
-- http://localhost:8000/api/health
+1. **Ctrl+Shift+D** → select **DarInformal: Full Stack (Windows)**
+2. Press **F5**
 
----
+This starts **both**:
+- FastAPI on http://localhost:8000
+- Frontend on http://localhost:5500
 
-## Step 7 — Run frontend from VS Code
+Browser opens automatically at http://localhost:5500 when the API is ready.
 
-### Option A — Live Server extension (recommended)
+Press **Shift+F5** to stop both.
 
-1. Install **Live Server** extension
-2. Right-click `frontend/index.html` → **Open with Live Server**
-3. Opens at http://localhost:5500 (API URL auto-configured via `frontend/js/config.js`)
+### Linux / macOS
 
-### Option B — Simple HTTP server
+Use **DarInformal: Full Stack (Linux/macOS)** instead.
 
-```bash
-cd frontend
-python -m http.server 3000
-```
+### API only (no frontend server)
 
-Open http://localhost:3000
+Use **DarInformal: API Only**.
 
 ---
 
@@ -200,7 +194,11 @@ In the map legend, set **Map source** to **Hybrid (WMS + API)**.
 
 | Configuration | Purpose |
 |---------------|---------|
+| **DarInformal: Full Stack (Windows)** | API + frontend together (F5) |
+| **DarInformal: Full Stack (Linux/macOS)** | API + frontend together (F5) |
+| **DarInformal: API Only** | Backend only |
 | **FastAPI Backend** | Debug API with breakpoints |
+| **Frontend (port 5500)** | Static frontend server only |
 | **Import GeoJSON → PostGIS** | Load GEE exports into DB |
 | **Compute Yearly Metrics** | Refresh dashboard cache |
 | **Generate Sample Data** | Create synthetic GeoJSON |
