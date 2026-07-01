@@ -79,22 +79,35 @@ curl -O https://darinformal-api.onrender.com/api/metrics/trend/csv
 
 1. Go to [Vercel Dashboard](https://vercel.com/new)
 2. Import GitHub repository
-3. Configure project:
+3. Configure project — **use one of these root directories**:
+
+#### Option A (recommended): `frontend/` folder
 
 | Setting | Value |
 |---------|-------|
 | **Root Directory** | `Dar-informal-settlements-webGIS/frontend` |
 | **Framework Preset** | Other |
-| **Build Command** | `npm run build` |
-| **Output Directory** | `.` |
+| **Build Command** | `npm run build` (or leave empty — `vercel.json` sets it) |
+| **Output Directory** | leave empty or `.` |
 
-4. Add **Environment Variable**:
+#### Option B: project folder (monorepo)
+
+| Setting | Value |
+|---------|-------|
+| **Root Directory** | `Dar-informal-settlements-webGIS` |
+| **Framework Preset** | Other |
+| **Build Command** | `npm run build` |
+| **Output Directory** | `frontend` |
+
+4. Add **Environment Variable** (Production + Preview):
 
 | Name | Value |
 |------|-------|
 | `DARINFORMAL_API_URL` | `https://darinformal-api.onrender.com/api` |
 
 5. Click **Deploy**
+
+> If Vercel dashboard settings conflict with `vercel.json`, click **Override** or clear custom Output Directory and let `vercel.json` control the build.
 
 ### Build process
 
@@ -110,6 +123,19 @@ window.DARINFORMAL_API_URL = 'https://darinformal-api.onrender.com/api';
 2. Map loads settlement polygons from the API
 3. Time slider switches years
 4. Click **⬇ CSV Report** → downloads growth trend CSV
+
+### Vercel build errors (troubleshooting)
+
+| Error | Fix |
+|-------|-----|
+| `package.json` not found | Set **Root Directory** to `Dar-informal-settlements-webGIS/frontend` (Option A) or `Dar-informal-settlements-webGIS` (Option B) |
+| No Output Directory named `public` found | Clear **Output Directory** in Vercel settings, or set `.` (Option A) / `frontend` (Option B) |
+| `npm run build` exited with 1 | Check build logs; ensure Node 18+; redeploy after setting `DARINFORMAL_API_URL` |
+| Site loads but map is empty | API cold start on Render — wait 30s; confirm `DARINFORMAL_API_URL` includes `/api` suffix |
+| 404 on `/js/api.js` | Remove any catch-all rewrite to `index.html` in dashboard; use repo `vercel.json` as-is |
+| CORS error in browser | Add your `*.vercel.app` URL to Render `CORS_ORIGINS` and `FRONTEND_URL` |
+
+After changing env vars or root directory: **Deployments → Redeploy** (not just cache clear).
 
 ---
 
