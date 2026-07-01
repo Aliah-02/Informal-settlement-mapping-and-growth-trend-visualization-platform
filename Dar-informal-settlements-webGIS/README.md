@@ -49,7 +49,8 @@ Vercel (frontend)  ──HTTPS──►  Render (FastAPI)
 
 **Integration:** Set `DARINFORMAL_API_URL` on Vercel → your Render API URL. Set `FRONTEND_URL` and `CORS_ORIGINS` on Render → your Vercel URL.
 
-Full step-by-step guide: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
+Full step-by-step guide: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**  
+Quick connect Render + Vercel: **[docs/DEPLOY_CONNECT.md](docs/DEPLOY_CONNECT.md)**
 
 ---
 

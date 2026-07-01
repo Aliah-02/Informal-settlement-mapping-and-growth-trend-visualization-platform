@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
+# Render production entrypoint — no --reload, bind to $PORT
 set -euo pipefail
 
-PORT="${PORT:-8000}"
-echo "=== DarInformal API starting on port ${PORT} ==="
+cd /app
+export PYTHONPATH=/app
 
-cd "$(dirname "$0")"
-export PYTHONPATH="${PYTHONPATH:-/app}:$(pwd)"
+PORT="${PORT:-10000}"
+echo "=== DarInformal API | port ${PORT} | PYTHONPATH=${PYTHONPATH} ==="
 
-python scripts/bootstrap_db.py || echo "Bootstrap skipped (non-fatal)"
+# Bootstrap PostGIS (import sample data on first run)
+python -c "from scripts.bootstrap_db import bootstrap_database; bootstrap_database()" \
+  || echo "Bootstrap skipped (non-fatal)"
 
-# Production: no --reload (reload breaks Render health checks / port binding)
 exec uvicorn main:app \
   --host 0.0.0.0 \
   --port "${PORT}" \
