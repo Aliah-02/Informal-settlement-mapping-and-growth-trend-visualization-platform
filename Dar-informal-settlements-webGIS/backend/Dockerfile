@@ -24,7 +24,8 @@ COPY . .
 RUN chmod +x start.sh
 
 ENV PORT=8000
+ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8000
 
-CMD ["./start.sh"]
+CMD ["bash", "start.sh"]

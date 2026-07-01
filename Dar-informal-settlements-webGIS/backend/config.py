@@ -4,10 +4,10 @@ from functools import lru_cache
 import json
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Annotated
 
-from pydantic import field_validator, model_validator
-from pydantic_settings import BaseSettings
+from pydantic import Field, field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 def _normalize_database_url(url: str) -> str:
@@ -17,8 +17,44 @@ def _normalize_database_url(url: str) -> str:
     return url
 
 
+def _parse_cors_origins(value) -> list[str]:
+    """Accept JSON array, comma-separated URLs, single URL, or empty."""
+    defaults = [
+        "http://localhost",
+        "http://localhost:80",
+        "http://localhost:3000",
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+    ]
+    if value is None:
+        return defaults
+    if isinstance(value, list):
+        return [str(o).strip() for o in value if str(o).strip()] or defaults
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return defaults
+        if raw.startswith("["):
+            try:
+                parsed = json.loads(raw)
+                if isinstance(parsed, list):
+                    return [str(o).strip() for o in parsed if str(o).strip()] or defaults
+            except json.JSONDecodeError:
+                pass
+        if "," in raw:
+            return [o.strip() for o in raw.split(",") if o.strip()]
+        return [raw]
+    return defaults
+
+
 class Settings(BaseSettings):
     """Environment-driven settings with sensible local defaults."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     app_name: str = "DarInformal API"
     app_version: str = "1.0.0"
@@ -37,14 +73,10 @@ class Settings(BaseSettings):
     # Production frontend (Vercel) — used for CORS
     frontend_url: str = ""
 
-    # CORS
-    cors_origins: list[str] = [
-        "http://localhost",
-        "http://localhost:80",
-        "http://localhost:3000",
-        "http://localhost:5500",
-        "http://127.0.0.1:5500",
-    ]
+    # CORS — NoDecode prevents pydantic-settings from JSON-parsing empty env values
+    cors_origins: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: _parse_cors_origins(None)
+    )
 
     # Data paths
     base_dir: Path = Path(__file__).resolve().parent
@@ -74,12 +106,7 @@ class Settings(BaseSettings):
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, v):
-        if isinstance(v, str):
-            try:
-                return json.loads(v)
-            except json.JSONDecodeError:
-                return [o.strip() for o in v.split(",") if o.strip()]
-        return v
+        return _parse_cors_origins(v)
 
     @model_validator(mode="after")
     def apply_cloud_env(self) -> "Settings":
@@ -93,7 +120,7 @@ class Settings(BaseSettings):
         origins = list(self.cors_origins)
         if self.frontend_url:
             url = self.frontend_url.rstrip("/")
-            if url not in origins:
+            if url and url not in origins:
                 origins.append(url)
         vercel_url = os.getenv("VERCEL_URL")
         if vercel_url:
@@ -102,10 +129,6 @@ class Settings(BaseSettings):
                 origins.append(full)
         self.cors_origins = origins
         return self
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
 
 
 @lru_cache

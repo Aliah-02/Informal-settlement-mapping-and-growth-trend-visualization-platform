@@ -52,8 +52,13 @@ Vercel (frontend)  ──HTTPS──►  Render (FastAPI API)
 | `DATABASE_URL` | Auto from Render Postgres |
 | `USE_POSTGIS` | `true` |
 | `AUTO_IMPORT_ON_STARTUP` | `true` |
+| `DEBUG` | `false` |
 | `FRONTEND_URL` | `https://your-app.vercel.app` |
-| `CORS_ORIGINS` | `["https://your-app.vercel.app"]` |
+| `CORS_ORIGINS` | *(optional)* `https://your-app.vercel.app` or `["https://your-app.vercel.app"]` |
+
+> **Important:** If `CORS_ORIGINS` is set in Render, use a valid URL or JSON array — **do not leave it as an empty string**. Easiest: delete `CORS_ORIGINS` and only set `FRONTEND_URL` (CORS is applied automatically).
+
+Clear any custom **Start Command** in Render — the Docker image runs `bash start.sh` (no `--reload`).
 
 ### First deploy bootstrap
 
@@ -197,7 +202,9 @@ GeoTIFF rasters can be cataloged locally with `python scripts/catalog_rasters.py
 
 | Issue | Fix |
 |-------|-----|
-| CORS error on Vercel | Add Vercel URL to Render `CORS_ORIGINS` + `FRONTEND_URL` |
+| `error parsing value for field "cors_origins"` | Delete empty `CORS_ORIGINS` in Render, or set `FRONTEND_URL` only, or use `https://your-app.vercel.app` |
+| No open ports / deploy timeout | Clear Render **Start Command**; redeploy so `start.sh` runs without `--reload` |
+| CORS error on Vercel | Add Vercel URL to Render `FRONTEND_URL` (and `CORS_ORIGINS` if used) |
 | API cold start slow | Normal on Render free — wait 30s |
 | Empty map | Check `/api/health` — re-import GeoJSON to Render Postgres |
 | CSV download fails | Ensure API URL correct in Vercel env |
