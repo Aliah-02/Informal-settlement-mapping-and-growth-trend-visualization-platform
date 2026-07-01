@@ -4,6 +4,9 @@ set -euo pipefail
 PORT="${PORT:-8000}"
 echo "=== DarInformal API starting on port ${PORT} ==="
 
+cd "$(dirname "$0")"
+export PYTHONPATH="${PYTHONPATH:-/app}:$(pwd)"
+
 python scripts/bootstrap_db.py || echo "Bootstrap skipped (non-fatal)"
 
 # Production: no --reload (reload breaks Render health checks / port binding)

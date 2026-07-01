@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 import logging
+import sys
 from pathlib import Path
+
+# Ensure /app (backend root) is on PYTHONPATH when run as scripts/bootstrap_db.py
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent
+if str(_BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_ROOT))
 
 from sqlalchemy import text
 
@@ -62,8 +68,6 @@ def bootstrap_database() -> None:
 
     logger.info("PostGIS empty — importing bundled GeoJSON...")
     try:
-        import sys
-        sys.path.insert(0, str(settings.base_dir))
         from scripts.import_geojson_to_postgis import import_all
         from scripts.compute_yearly_metrics import compute_and_store
         from db.repository import get_available_years

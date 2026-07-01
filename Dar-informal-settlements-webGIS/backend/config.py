@@ -4,10 +4,9 @@ from functools import lru_cache
 import json
 import os
 from pathlib import Path
-from typing import Annotated
 
-from pydantic import Field, field_validator, model_validator
-from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+from pydantic import Field, computed_field, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def _normalize_database_url(url: str) -> str:
@@ -27,24 +26,24 @@ def _parse_cors_origins(value) -> list[str]:
         "http://127.0.0.1:5500",
     ]
     if value is None:
-        return defaults
+        return list(defaults)
     if isinstance(value, list):
-        return [str(o).strip() for o in value if str(o).strip()] or defaults
+        return [str(o).strip() for o in value if str(o).strip()] or list(defaults)
     if isinstance(value, str):
         raw = value.strip()
         if not raw:
-            return defaults
+            return list(defaults)
         if raw.startswith("["):
             try:
                 parsed = json.loads(raw)
                 if isinstance(parsed, list):
-                    return [str(o).strip() for o in parsed if str(o).strip()] or defaults
+                    return [str(o).strip() for o in parsed if str(o).strip()] or list(defaults)
             except json.JSONDecodeError:
                 pass
         if "," in raw:
             return [o.strip() for o in raw.split(",") if o.strip()]
         return [raw]
-    return defaults
+    return list(defaults)
 
 
 class Settings(BaseSettings):
@@ -73,10 +72,8 @@ class Settings(BaseSettings):
     # Production frontend (Vercel) — used for CORS
     frontend_url: str = ""
 
-    # CORS — NoDecode prevents pydantic-settings from JSON-parsing empty env values
-    cors_origins: Annotated[list[str], NoDecode] = Field(
-        default_factory=lambda: _parse_cors_origins(None)
-    )
+    # String env only — never bind CORS_ORIGINS to list[str] (breaks on empty string)
+    cors_origins_str: str = Field(default="", validation_alias="CORS_ORIGINS")
 
     # Data paths
     base_dir: Path = Path(__file__).resolve().parent
@@ -103,21 +100,11 @@ class Settings(BaseSettings):
     isi_weight_bsi: float = 0.2
     isi_weight_fragmentation: float = 0.25
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v):
-        return _parse_cors_origins(v)
-
-    @model_validator(mode="after")
-    def apply_cloud_env(self) -> "Settings":
-        """Map Render DATABASE_URL and merge Vercel CORS origins."""
-        render_db = os.getenv("DATABASE_URL")
-        if render_db:
-            sync_url = _normalize_database_url(render_db)
-            self.database_url_sync = sync_url
-            self.database_url = sync_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-
-        origins = list(self.cors_origins)
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def cors_origins(self) -> list[str]:
+        """Resolved CORS allow-list from env string + frontend URL."""
+        origins = _parse_cors_origins(self.cors_origins_str or None)
         if self.frontend_url:
             url = self.frontend_url.rstrip("/")
             if url and url not in origins:
@@ -127,7 +114,16 @@ class Settings(BaseSettings):
             full = f"https://{vercel_url}" if not vercel_url.startswith("http") else vercel_url
             if full not in origins:
                 origins.append(full)
-        self.cors_origins = origins
+        return origins
+
+    @model_validator(mode="after")
+    def apply_cloud_env(self) -> "Settings":
+        """Map Render DATABASE_URL."""
+        render_db = os.getenv("DATABASE_URL")
+        if render_db:
+            sync_url = _normalize_database_url(render_db)
+            self.database_url_sync = sync_url
+            self.database_url = sync_url.replace("postgresql://", "postgresql+asyncpg://", 1)
         return self
 
 
