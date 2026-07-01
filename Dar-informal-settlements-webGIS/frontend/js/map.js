@@ -29,6 +29,11 @@ const DarMap = (() => {
   async function initGeoserverConfig() {
     try {
       geoserverConfig = await API.getGeoserverConfig();
+      if (window.DARINFORMAL_DEFAULT_RENDER_MODE === 'geojson') {
+        renderMode = 'geojson';
+        const sel = document.getElementById('render-mode');
+        if (sel) sel.value = 'geojson';
+      }
     } catch (e) {
       console.warn('GeoServer config unavailable, using GeoJSON only', e);
       geoserverConfig = null;

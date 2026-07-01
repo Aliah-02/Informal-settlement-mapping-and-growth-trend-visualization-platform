@@ -85,7 +85,12 @@
 
     <!-- Dashboard sidebar -->
     <aside class="dashboard-panel">
-      <h2 class="panel-title">Analytics Dashboard</h2>
+      <div class="panel-header-row">
+        <h2 class="panel-title">Analytics Dashboard</h2>
+        <button id="download-csv-btn" class="btn-download" title="Download growth trend CSV report">
+          ⬇ CSV Report
+        </button>
+      </div>
       <div id="dashboard-error" class="error-banner" style="display:none"></div>
 
       <!-- KPI cards -->
@@ -150,6 +155,7 @@
   <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="js/env.js"></script>
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/map.js"></script>
@@ -206,6 +212,11 @@
 
       // Initialize dashboard
       await Dashboard.init();
+
+      // CSV report download
+      document.getElementById('download-csv-btn')?.addEventListener('click', () => {
+        Dashboard.downloadGrowthReport();
+      });
 
       // Time slider
       TimeSlider.init({

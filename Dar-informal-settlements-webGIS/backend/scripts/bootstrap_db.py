@@ -1,0 +1,85 @@
+"""Bootstrap PostGIS on cloud hosts (Render) and seed data if empty."""
+
+from __future__ import annotations
+
+import logging
+from pathlib import Path
+
+from sqlalchemy import text
+
+from config import get_settings
+from db.database import get_engine, session_scope
+from db.repository import is_populated
+
+logger = logging.getLogger(__name__)
+
+
+def _run_sql_file(engine, sql_path: Path) -> None:
+    if not sql_path.exists():
+        return
+    sql = sql_path.read_text(encoding="utf-8")
+    statements = [s.strip() for s in sql.split(";") if s.strip() and not s.strip().startswith("--")]
+    with engine.connect() as conn:
+        for stmt in statements:
+            try:
+                conn.execute(text(stmt))
+            except Exception as exc:
+                logger.debug("SQL skip: %s", exc)
+        conn.commit()
+
+
+def bootstrap_database() -> None:
+    """Enable PostGIS, apply schema, import GeoJSON if DB is empty."""
+    settings = get_settings()
+    if not settings.use_postgis:
+        logger.info("PostGIS disabled — skipping bootstrap")
+        return
+
+    try:
+        engine = get_engine(settings)
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
+            conn.commit()
+        logger.info("PostGIS extension ready")
+    except Exception as exc:
+        logger.warning("PostGIS bootstrap failed (will use GeoJSON fallback): %s", exc)
+        return
+
+    init_sql = settings.data_dir / "init.sql"
+    try:
+        _run_sql_file(engine, init_sql)
+        logger.info("Schema bootstrap applied")
+    except Exception as exc:
+        logger.warning("Schema bootstrap partial: %s", exc)
+
+    if is_populated(settings):
+        logger.info("PostGIS already has settlement data")
+        return
+
+    if not settings.auto_import_on_startup:
+        logger.info("PostGIS empty — auto_import_on_startup=false, using GeoJSON fallback")
+        return
+
+    logger.info("PostGIS empty — importing bundled GeoJSON...")
+    try:
+        import sys
+        sys.path.insert(0, str(settings.base_dir))
+        from scripts.import_geojson_to_postgis import import_all
+        from scripts.compute_yearly_metrics import compute_and_store
+        from db.repository import get_available_years
+
+        count = import_all()
+        if count > 0:
+            for year in get_available_years(settings) or settings.analysis_years:
+                compute_and_store(year)
+            logger.info("Imported %d settlement features into PostGIS", count)
+    except Exception as exc:
+        logger.error("Auto-import failed: %s", exc)
+
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+    bootstrap_database()

@@ -35,6 +35,50 @@ GeoJSON files  ──►  import script  ──►  PostGIS (settlements, yearly
 
 ---
 
+## Cloud Deployment (Render + Vercel — Free Tier)
+
+Deploy the full stack without Docker:
+
+| Tier | Platform | Component |
+|------|----------|-----------|
+| Backend | [Render](https://render.com) (free) | FastAPI + PostgreSQL/PostGIS |
+| Frontend | [Vercel](https://vercel.com) (free) | Leaflet map + analytics dashboard |
+
+```text
+Vercel (frontend)  ──HTTPS──►  Render (FastAPI)
+                                    │
+                                    ▼
+                             Render PostgreSQL + PostGIS
+```
+
+**Integration:** Set `DARINFORMAL_API_URL` on Vercel → your Render API URL. Set `FRONTEND_URL` and `CORS_ORIGINS` on Render → your Vercel URL.
+
+GeoServer WMS is **not** on free cloud tiers — the frontend auto-switches to **API GeoJSON** mode on `vercel.app` / `onrender.com`.
+
+Full step-by-step guide: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
+
+---
+
+## CSV Growth Trend Reports
+
+Download settlement growth analytics as CSV from the dashboard or API:
+
+| Method | Endpoint / Action |
+|--------|-------------------|
+| Dashboard | Click **⬇ CSV Report** in the analytics panel |
+| API | `GET /api/metrics/trend/csv` |
+| Change detection | `GET /api/change/{from}/{to}/csv` |
+
+```bash
+# Local
+curl -O http://localhost:8000/api/metrics/trend/csv
+
+# Production (Render)
+curl -O https://darinformal-api.onrender.com/api/metrics/trend/csv
+```
+
+---
+
 ## Quick Start (Docker — Recommended)
 
 ### Prerequisites
@@ -278,7 +322,9 @@ See `geoserver/README.md` for WMS URL examples and manual setup.
 | `GET` | `/api/geoserver` | WMS/WFS URLs for frontend |
 | `GET` | `/api/risk/{year}` | GeoJSON risk layer + WMS metadata |
 | `GET` | `/api/metrics/trend` | Time-series analytics |
+| `GET` | `/api/metrics/trend/csv` | Growth trend CSV report download |
 | `GET` | `/api/change/{from}/{to}` | Change detection |
+| `GET` | `/api/change/{from}/{to}/csv` | Change detection CSV report |
 | `GET` | `/api/settlements` | Filtered settlement list |
 | `GET` | `/api/aoi` | Dar es Salaam bounding box |
 | `POST` | `/api/admin/import` | Re-import GeoJSON (debug mode only) |
@@ -289,6 +335,8 @@ See `geoserver/README.md` for WMS URL examples and manual setup.
 
 ```
 Dar-informal-settlements-webGIS/
+├── render.yaml                     # Render Blueprint (API + Postgres)
+├── docs/DEPLOYMENT.md              # Render + Vercel deployment guide
 ├── backend/
 │   ├── main.py                     # FastAPI application
 │   ├── config.py                   # Settings (PostGIS, GeoServer)
@@ -301,15 +349,19 @@ Dar-informal-settlements-webGIS/
 │   │   ├── loader.py               # GeoJSON file loader
 │   │   ├── isi_model.py            # ISI computation
 │   │   ├── change_detection.py     # Temporal analysis
-│   │   └── metrics.py              # Dashboard aggregations
+│   │   ├── metrics.py              # Dashboard aggregations
+│   │   └── reports.py              # CSV report export
 │   ├── scripts/
 │   │   ├── import_geojson_to_postgis.py
-│   │   └── compute_yearly_metrics.py
+│   │   ├── compute_yearly_metrics.py
+│   │   └── bootstrap_db.py         # Render startup seed
 │   └── data/
 │       ├── init.sql                # PostGIS schema
 │       └── geojson/                # GEE export destination
 ├── frontend/
 │   ├── index.html
+│   ├── vercel.json                 # Vercel deployment config
+│   ├── package.json                # Build script for env injection
 │   ├── css/style.css
 │   └── js/                         # map.js (WMS+API hybrid), api.js, ...
 ├── geoserver/

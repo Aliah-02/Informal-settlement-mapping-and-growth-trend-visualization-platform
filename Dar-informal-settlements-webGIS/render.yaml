@@ -1,0 +1,38 @@
+# DarInformal — Render Blueprint (Backend + PostgreSQL)
+# Deploy: https://dashboard.render.com/ → New Blueprint → connect repo
+# Set root directory to: Dar-informal-settlements-webGIS
+
+databases:
+  - name: darinformal-db
+    plan: free
+    databaseName: darinformal
+    user: darinformal
+    postgresMajorVersion: "16"
+    ipAllowList: []
+
+services:
+  - type: web
+    name: darinformal-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: darinformal-db
+          property: connectionString
+      - key: USE_POSTGIS
+        value: "true"
+      - key: AUTO_IMPORT_ON_STARTUP
+        value: "true"
+      - key: DEBUG
+        value: "false"
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: PORT
+        value: "8000"

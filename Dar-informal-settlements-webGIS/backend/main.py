@@ -8,7 +8,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from config import get_settings
 from db.database import check_connection
@@ -18,6 +18,7 @@ from models.schemas import (
     RiskLayerResponse,
     TrendResponse,
 )
+from scripts.bootstrap_db import bootstrap_database
 from services.change_detection import detect_changes
 from services.data_source import (
     available_years,
@@ -28,6 +29,7 @@ from services.data_source import (
 )
 from services.loader import to_feature_collection
 from services.metrics import compute_trend, compute_year_metrics
+from services.reports import export_change_detection_csv, export_growth_trend_csv
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,6 +42,10 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: verify PostGIS + data availability; shutdown: cleanup."""
+    try:
+        bootstrap_database()
+    except Exception as exc:
+        logger.warning("Database bootstrap skipped: %s", exc)
     db_status = check_connection(settings)
     years = available_years(settings)
     source = data_source_label(settings)
@@ -68,7 +74,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins + ["*"] if settings.debug else settings.cors_origins,
+    allow_origins=settings.cors_origins + (["*"] if settings.debug else []),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -173,6 +179,39 @@ async def get_metrics_trend():
     """Return time-series growth metrics across all available years."""
     result = compute_trend(settings)
     return TrendResponse(**result)
+
+
+@app.get("/api/metrics/trend/csv", tags=["Analytics", "Reports"])
+async def download_growth_trend_csv():
+    """Download growth trend analytics as CSV report."""
+    trend = compute_trend(settings)
+    if not trend.get("metrics"):
+        raise HTTPException(status_code=404, detail="No trend data available for export")
+    csv_content = export_growth_trend_csv(trend)
+    filename = "darinformal_growth_trend_report.csv"
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/api/change/{from_year}/{to_year}/csv", tags=["Change Detection", "Reports"])
+async def download_change_detection_csv(from_year: int, to_year: int):
+    """Download change detection results as CSV report."""
+    if from_year >= to_year:
+        raise HTTPException(status_code=400, detail="from_year must be less than to_year")
+    try:
+        result = detect_changes(from_year, to_year, settings)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    csv_content = export_change_detection_csv(result)
+    filename = f"darinformal_change_{from_year}_{to_year}.csv"
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get(
