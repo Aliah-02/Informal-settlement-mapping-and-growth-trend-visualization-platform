@@ -1,8 +1,10 @@
+# Render Dockerfile — use when Root Directory is the repository root (empty)
+# Builds the FastAPI backend from Dar-informal-settlements-webGIS/backend/
+
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# Bust Docker layer cache when app code changes (Render was serving stale config.py)
 ARG APP_REVISION=2026-07-01-v4-root
 RUN echo "Build revision: ${APP_REVISION}"
 
@@ -22,10 +24,10 @@ ENV C_INCLUDE_PATH=/usr/include/gdal
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
-COPY requirements.txt .
+COPY Dar-informal-settlements-webGIS/backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY Dar-informal-settlements-webGIS/backend/ .
 RUN chmod +x start.sh
 
 EXPOSE 10000

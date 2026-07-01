@@ -1,23 +1,41 @@
-# Connect Render + Vercel (your deployment)
+# Connect Render + Vercel
 
-## Your URLs
+## Your live URLs
 
 | Service | URL |
 |---------|-----|
 | **Frontend (Vercel)** | https://informal-settlement-mapping-and-gro.vercel.app |
-| **Backend (Render)** | `https://YOUR-SERVICE-NAME.onrender.com` |
+| **Backend (Render)** | https://informal-settlement-mapping-and-growth-sm5w.onrender.com |
 
 ---
 
-## Step 1 — Render must use branch `main`
+## Fix: `Dockerfile: no such file or directory`
 
-The fixes are on **`main`**. In Render:
+Render could not find the Dockerfile because **Root Directory** and **Dockerfile path** did not match.
 
-**Settings → Build & Deploy → Branch** → set to **`main`**
+### Option A — Root Directory empty (recommended)
 
-Then: **Manual Deploy → Clear build cache & deploy**
+In Render → your web service → **Settings**:
 
-### Render environment (darinformal-api)
+| Setting | Value |
+|---------|-------|
+| **Root Directory** | *(leave empty)* |
+| **Dockerfile Path** | `Dockerfile` |
+| **Docker Context** | `.` |
+
+The repo now has `Dockerfile` at the **repository root** that builds the backend.
+
+### Option B — Root Directory = subfolder
+
+| Setting | Value |
+|---------|-------|
+| **Root Directory** | `Dar-informal-settlements-webGIS` |
+| **Dockerfile Path** | `backend/Dockerfile` |
+| **Docker Context** | `backend` |
+
+---
+
+## Render environment variables
 
 | Key | Value |
 |-----|-------|
@@ -25,43 +43,34 @@ Then: **Manual Deploy → Clear build cache & deploy**
 | `DEBUG` | `false` |
 | `USE_POSTGIS` | `true` |
 | `AUTO_IMPORT_ON_STARTUP` | `true` |
+| `PYTHONPATH` | `/app` |
 
-**Delete** `CORS_ORIGINS` if empty. **Start Command** must be **blank**.
+Delete empty `CORS_ORIGINS`. **Start Command** = blank.
 
-Test: `https://YOUR-API.onrender.com/api/health`
+Then: **Manual Deploy → Clear build cache & deploy**
+
+### Test API
+
+```
+https://informal-settlement-mapping-and-growth-sm5w.onrender.com/api/health
+```
 
 ---
 
-## Step 2 — Vercel environment
+## Vercel environment variable
 
 **Settings → Environment Variables:**
 
 | Key | Value |
 |-----|-------|
-| `DARINFORMAL_API_URL` | `https://YOUR-API.onrender.com/api` |
-
-Replace `YOUR-API` with your actual Render service name. Must end with `/api`.
+| `DARINFORMAL_API_URL` | `https://informal-settlement-mapping-and-growth-sm5w.onrender.com/api` |
 
 Redeploy Vercel after saving.
 
 ---
 
-## Step 3 — Verify connection
+## Verify
 
-1. Open https://informal-settlement-mapping-and-gro.vercel.app
-2. Top-right badge should show: `API v1.0 · PostGIS · 5 yrs` (or GeoJSON if DB still seeding)
-3. Map shows colored settlement polygons
-4. Time slider changes years
-
-If map is empty but API works: wait 60s (Render cold start) and refresh.
-
----
-
-## Still failing?
-
-| Symptom | Fix |
-|---------|-----|
-| `NoDecode` in logs | Wrong branch or cached build — use `main` + clear cache |
-| Exited status 1 | Check Render logs after `Starting uvicorn...` |
-| CORS error in browser | Set `FRONTEND_URL` exactly (no trailing slash) |
-| API offline on Vercel | `DARINFORMAL_API_URL` must include `/api` suffix |
+1. API health returns `"status": "healthy"` and 5 data years
+2. Vercel map shows settlement polygons
+3. No CORS errors in browser console (F12)
