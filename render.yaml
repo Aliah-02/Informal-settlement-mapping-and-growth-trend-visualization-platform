@@ -1,5 +1,6 @@
 # Render Blueprint — repository root
 # Dashboard: Root Directory = (leave empty)
+# IMPORTANT: Environment must be "Docker" (not Python). Dockerfile path: ./Dockerfile
 
 databases:
   - name: darinformal-db
@@ -33,3 +34,9 @@ services:
         value: https://informal-settlement-mapping-and-gro.vercel.app
       - key: PYTHONPATH
         value: /app
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        value: admin@lsm2group11.com
+      - key: ADMIN_PASSWORD
+        generateValue: true

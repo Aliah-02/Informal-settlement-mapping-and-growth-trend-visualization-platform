@@ -3,7 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Bust Docker layer cache when app code changes (Render was serving stale config.py)
-ARG APP_REVISION=2026-07-01-v4-root
+ARG APP_REVISION=2026-07-09-v8-python312
 RUN echo "Build revision: ${APP_REVISION}"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -23,7 +23,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 RUN chmod +x start.sh

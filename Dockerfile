@@ -5,7 +5,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-ARG APP_REVISION=2026-07-09-v7-cors-stats
+ARG APP_REVISION=2026-07-09-v8-python312
 RUN echo "Build revision: ${APP_REVISION}"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -25,7 +25,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
 COPY Dar-informal-settlements-webGIS/backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 COPY Dar-informal-settlements-webGIS/backend/ .
 RUN chmod +x start.sh

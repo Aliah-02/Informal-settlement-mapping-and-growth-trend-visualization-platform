@@ -118,6 +118,20 @@ FRONTEND_URL=https://informal-settlement-mapping-and-gro.vercel.app
 
 | Setting | Value |
 |---------|-------|
+| **Environment** | **Docker** (not Python) |
 | Root Directory | *(empty)* |
 | Dockerfile Path | `Dockerfile` |
 | Start Command | *(empty)* |
+
+### Build failed: `pydantic-core` / Python 3.14 / maturin error
+
+If logs show `python3.14` and `pydantic-core` metadata failed:
+
+1. **Settings → Environment** → change from **Python** to **Docker**
+2. **Dockerfile Path:** `Dockerfile` (repo root)
+3. **Root Directory:** leave **empty**
+4. **Manual Deploy → Clear build cache & deploy**
+
+The repo pins **Python 3.12** in `runtime.txt` (fallback) and uses `python:3.12-slim` in Docker. Python 3.14 cannot build `pydantic-core` on Render's read-only filesystem.
+
+---
