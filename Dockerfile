@@ -5,7 +5,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-ARG APP_REVISION=2026-07-01-v5-postgis
+ARG APP_REVISION=2026-07-09-v6-auth-fix
 RUN echo "Build revision: ${APP_REVISION}"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

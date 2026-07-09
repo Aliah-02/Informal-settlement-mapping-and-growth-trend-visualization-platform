@@ -9,6 +9,7 @@ from typing import Optional
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from config import get_settings
@@ -109,6 +110,28 @@ async def file_not_found_handler(request, exc: FileNotFoundError):
 @app.exception_handler(ValueError)
 async def value_error_handler(request, exc: ValueError):
     return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+@app.exception_handler(SQLAlchemyError)
+async def database_error_handler(request, exc: SQLAlchemyError):
+    logger.exception("Database error on %s", request.url.path)
+    return JSONResponse(
+        status_code=503,
+        content={
+            "detail": (
+                "Database error. Ensure DATABASE_URL is linked on Render and redeploy the API."
+            )
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_error_handler(request, exc: Exception):
+    logger.exception("Unhandled error on %s", request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error. Check API logs on Render."},
+    )
 
 
 @app.get("/api/health", tags=["System"])

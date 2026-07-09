@@ -16,5 +16,9 @@
 
   if (local) {
     window.DARINFORMAL_API_URL = 'http://localhost:8000/api';
+  } else {
+    // Production fallback when env.js was not built (Vercel)
+    window.DARINFORMAL_API_URL =
+      'https://informal-settlement-mapping-and-growth-sm5w.onrender.com/api';
   }
 })();

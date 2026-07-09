@@ -67,13 +67,23 @@ const Auth = (() => {
       confirm_password: form.confirm_password.value,
       company_name: form.company_name?.value?.trim() || null,
     };
-    const res = await fetch(`${API.BASE}/auth/signup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify(body),
-    });
+    let res;
+    try {
+      res = await fetch(`${API.BASE}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      throw new Error(
+        'Cannot reach API server. Wait for Render cold start (~60s) or check DARINFORMAL_API_URL on Vercel.'
+      );
+    }
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.detail || 'Signup failed');
+    const detail = Array.isArray(data.detail)
+      ? data.detail[0]?.msg
+      : data.detail;
+    if (!res.ok) throw new Error(detail || `Signup failed (${res.status})`);
     setSession(data);
     return data;
   }
@@ -83,13 +93,23 @@ const Auth = (() => {
       email: form.email.value.trim(),
       password: form.password.value,
     };
-    const res = await fetch(`${API.BASE}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify(body),
-    });
+    let res;
+    try {
+      res = await fetch(`${API.BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      throw new Error(
+        'Cannot reach API server. Wait for Render cold start (~60s) or check DARINFORMAL_API_URL on Vercel.'
+      );
+    }
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.detail || 'Login failed');
+    const detail = Array.isArray(data.detail)
+      ? data.detail[0]?.msg
+      : data.detail;
+    if (!res.ok) throw new Error(detail || `Login failed (${res.status})`);
     setSession(data);
     return data;
   }

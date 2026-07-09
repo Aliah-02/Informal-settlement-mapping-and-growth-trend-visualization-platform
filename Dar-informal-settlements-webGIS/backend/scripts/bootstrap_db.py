@@ -35,6 +35,58 @@ def _run_sql_file(engine, sql_path: Path) -> None:
         conn.commit()
 
 
+def _ensure_auth_tables(engine) -> None:
+    """Apply auth/activity tables even when settlement schema already exists."""
+    auth_sql = """
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        first_name VARCHAR(120) NOT NULL,
+        last_name VARCHAR(120) NOT NULL,
+        mobile VARCHAR(32),
+        company_name VARCHAR(255),
+        role VARCHAR(20) NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        last_login_at TIMESTAMPTZ
+    );
+    CREATE TABLE IF NOT EXISTS user_sessions (
+        id SERIAL PRIMARY KEY,
+        session_token VARCHAR(64) UNIQUE NOT NULL,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        ip_address VARCHAR(64),
+        user_agent TEXT,
+        last_seen_at TIMESTAMPTZ DEFAULT NOW(),
+        created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS page_visits (
+        id SERIAL PRIMARY KEY,
+        session_token VARCHAR(64) NOT NULL,
+        page_path VARCHAR(512) NOT NULL,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        ip_address VARCHAR(64),
+        visited_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS download_logs (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        user_email VARCHAR(255),
+        session_token VARCHAR(64),
+        report_type VARCHAR(64) NOT NULL,
+        report_label VARCHAR(255) NOT NULL,
+        ip_address VARCHAR(64),
+        downloaded_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    """
+    statements = [s.strip() for s in auth_sql.split(";") if s.strip()]
+    with engine.connect() as conn:
+        for stmt in statements:
+            conn.execute(text(stmt))
+        conn.commit()
+    logger.info("Auth tables ensured")
+
+
 def bootstrap_database() -> None:
     """Enable PostGIS, apply schema, import GeoJSON if DB is empty."""
     settings = get_settings()
@@ -63,6 +115,13 @@ def bootstrap_database() -> None:
     except Exception as exc:
         logger.warning("Schema bootstrap partial: %s", exc)
 
+    try:
+        _ensure_auth_tables(engine)
+    except Exception as exc:
+        logger.warning("Auth schema bootstrap failed: %s", exc)
+
+    _seed_admin_user(settings)
+
     if is_populated(settings):
         logger.info("PostGIS already has settlement data")
         return
@@ -90,10 +149,19 @@ def bootstrap_database() -> None:
 
 def _seed_admin_user(settings) -> None:
     """Create default admin account if none exists."""
+    if not is_database_configured():
+        logger.warning("Admin seed skipped — DATABASE_URL not set")
+        return
     try:
         with session_scope(settings) as db:
+            try:
+                db.execute(text("SELECT 1 FROM users LIMIT 1"))
+            except Exception as exc:
+                logger.error("Auth tables missing — re-run schema bootstrap: %s", exc)
+                return
             existing = db.scalar(text("SELECT COUNT(*) FROM users WHERE role = 'admin'"))
             if existing and int(existing) > 0:
+                logger.info("Admin user already exists")
                 return
             email = settings.admin_email.lower().strip()
             pwd_hash = hash_password(settings.admin_password)
