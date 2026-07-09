@@ -14,7 +14,7 @@ if str(_BACKEND_ROOT) not in sys.path:
 from sqlalchemy import text
 
 from config import get_settings
-from db.database import get_engine, session_scope
+from db.database import get_engine, is_database_configured, session_scope
 from db.repository import is_populated
 from services.auth_service import hash_password
 
@@ -40,6 +40,10 @@ def bootstrap_database() -> None:
     settings = get_settings()
     if not settings.use_postgis:
         logger.info("PostGIS disabled — skipping bootstrap")
+        return
+
+    if not is_database_configured():
+        logger.warning("DATABASE_URL not set — using GeoJSON files (link Render Postgres to enable PostGIS)")
         return
 
     try:

@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
 
 from config import get_settings
-from db.database import check_connection, get_session
+from db.database import check_connection, get_session, is_database_configured
 from models.schemas import (
     ChangeDetectionResponse,
     RiskLayerResponse,
@@ -121,11 +121,18 @@ async def health_check():
         "version": settings.app_version,
         "data_source": data_source_label(settings),
         "database": {
+            "configured": db_status.get("configured", is_database_configured()),
             "connected": db_status.get("connected", False),
             "postgis_version": db_status.get("postgis_version"),
             "settlement_count": db_status.get("settlement_count", 0),
+            "error": db_status.get("error"),
         },
         "data_years_available": years,
+        "hint": (
+            "Link Render PostgreSQL → add DATABASE_URL to enable PostGIS"
+            if not db_status.get("connected")
+            else None
+        ),
     }
 
 

@@ -1,6 +1,5 @@
-# Render Blueprint — Backend + PostgreSQL
-# Dashboard Root Directory MUST be: Dar-informal-settlements-webGIS
-# (If Root Directory is empty/repo root, use /render.yaml at repo root instead)
+# Render Blueprint — repository root
+# Dashboard: Root Directory = (leave empty)
 
 databases:
   - name: darinformal-db
@@ -12,12 +11,12 @@ databases:
 
 services:
   - type: web
-    name: darinformal-api
+    name: informal-settlement-mapping-and-growth
     runtime: docker
     plan: free
     region: frankfurt
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL

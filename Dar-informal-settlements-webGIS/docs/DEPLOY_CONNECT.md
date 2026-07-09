@@ -1,23 +1,35 @@
-# Connect Render + Vercel (your deployment)
+# Connect Render + Vercel
 
 ## Your URLs
 
 | Service | URL |
 |---------|-----|
 | **Frontend (Vercel)** | https://informal-settlement-mapping-and-gro.vercel.app |
-| **Backend (Render)** | `https://YOUR-SERVICE-NAME.onrender.com` |
+| **Backend (Render)** | https://informal-settlement-mapping-and-growth-sm5w.onrender.com |
 
 ---
 
-## Step 1 — Render must use branch `main`
+## Current status (what your health JSON means)
 
-The fixes are on **`main`**. In Render:
+```json
+{
+  "status": "healthy",
+  "data_source": "geojson",
+  "database": { "connected": false },
+  "data_years_available": [2005, 2010, 2015, 2020, 2026]
+}
+```
 
-**Settings → Build & Deploy → Branch** → set to **`main`**
+| Field | Meaning |
+|-------|---------|
+| `status: healthy` | API is running — good |
+| `data_source: geojson` | Serving map data from bundled files (works on Vercel) |
+| `database.connected: false` | PostgreSQL not linked yet |
+| `data_years_available: 5 yrs` | Map and dashboard will work |
 
-Then: **Manual Deploy → Clear build cache & deploy**
+**Your Vercel map should already show settlement polygons** using GeoJSON fallback.
 
-### Render environment (darinformal-api)
+### Render environment variables
 
 | Key | Value |
 |-----|-------|
@@ -32,40 +44,80 @@ Then: **Manual Deploy → Clear build cache & deploy**
 
 **Delete** `CORS_ORIGINS` if empty. **Start Command** must be **blank**.
 
-Test: `https://YOUR-API.onrender.com/api/health`
+Test: `https://informal-settlement-mapping-and-growth-sm5w.onrender.com/api/health`
 
 ---
 
-## Step 2 — Vercel environment
+## Auth & admin dashboard
 
-**Settings → Environment Variables:**
-
-| Key | Value |
-|-----|-------|
-| `DARINFORMAL_API_URL` | `https://YOUR-API.onrender.com/api` |
-
-Replace `YOUR-API` with your actual Render service name. Must end with `/api`.
-
-Redeploy Vercel after saving.
+- **Sign up / Login:** `/auth.html`
+- **Admin dashboard:** `/admin.html` (admin role only)
+- Default admin is created on first boot from `ADMIN_EMAIL` / `ADMIN_PASSWORD`
+- Visitor stats and download logs require `DATABASE_URL` linked on Render
 
 ---
 
-## Step 3 — Verify connection
+## Enable PostGIS (optional upgrade)
 
-1. Open https://informal-settlement-mapping-and-gro.vercel.app
-2. Top-right badge should show: `API v1.0 · PostGIS · 5 yrs` (or GeoJSON if DB still seeding)
-3. Map shows colored settlement polygons
-4. Time slider changes years
+### Step 1 — Create PostgreSQL on Render
 
-If map is empty but API works: wait 60s (Render cold start) and refresh.
+1. Render Dashboard → **New** → **PostgreSQL**
+2. Name: `darinformal-db`, Plan: Free, Region: same as API
+3. Create database
+
+### Step 2 — Link DATABASE_URL to your web service
+
+1. Open **informal-settlement-mapping-and-growth-sm5w** (web service)
+2. **Environment** → **Add Environment Variable**
+3. Key: `DATABASE_URL`
+4. Value: click **Add from database** → select `darinformal-db` → **Internal Database URL**
+5. Save → **Manual Deploy**
+
+### Step 3 — Verify
+
+After redeploy (~2 min), check:
+
+```
+https://informal-settlement-mapping-and-growth-sm5w.onrender.com/api/health
+```
+
+Expected after PostGIS links:
+
+```json
+{
+  "data_source": "postgis",
+  "database": {
+    "configured": true,
+    "connected": true,
+    "settlement_count": 119
+  }
+}
+```
+
+On first boot the API auto-imports GeoJSON into PostGIS.
 
 ---
 
-## Still failing?
+## Vercel connection
 
-| Symptom | Fix |
-|---------|-----|
-| `NoDecode` in logs | Wrong branch or cached build — use `main` + clear cache |
-| Exited status 1 | Check Render logs after `Starting uvicorn...` |
-| CORS error in browser | Set `FRONTEND_URL` exactly (no trailing slash) |
-| API offline on Vercel | `DARINFORMAL_API_URL` must include `/api` suffix |
+**Environment variable:**
+
+```
+DARINFORMAL_API_URL=https://informal-settlement-mapping-and-growth-sm5w.onrender.com/api
+```
+
+**Render environment:**
+
+```
+FRONTEND_URL=https://informal-settlement-mapping-and-gro.vercel.app
+```
+
+---
+
+## Render Docker settings
+
+| Setting | Value |
+|---------|-------|
+| Root Directory | *(empty)* |
+| Dockerfile Path | `Dockerfile` |
+| Start Command | *(empty)* |
