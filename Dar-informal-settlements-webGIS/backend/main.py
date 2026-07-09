@@ -6,18 +6,22 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+from sqlalchemy.orm import Session
 
 from config import get_settings
-from db.database import check_connection
+from db.database import check_connection, get_session
 from models.schemas import (
     ChangeDetectionResponse,
     RiskLayerResponse,
     TrendResponse,
 )
+from routers import activity, admin_dashboard, auth
+from routers.auth import get_current_user_optional
 from scripts.bootstrap_db import bootstrap_database
+from services.activity_service import record_download
 from services.change_detection import detect_changes
 from services.data_source import (
     available_years,
@@ -81,6 +85,20 @@ if settings.allow_vercel_previews():
     _cors_kw["allow_origin_regex"] = r"https://.*\.vercel\.app"
 
 app.add_middleware(CORSMiddleware, **_cors_kw)
+
+app.include_router(auth.router)
+app.include_router(activity.router)
+app.include_router(admin_dashboard.router)
+
+
+def _db_dep():
+    SessionLocal = get_session()
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.commit()
+        db.close()
 
 
 @app.exception_handler(FileNotFoundError)
@@ -157,11 +175,25 @@ async def get_metrics_trend():
 
 
 @app.get("/api/metrics/trend/csv", tags=["Analytics", "Reports"])
-async def download_growth_trend_csv():
+async def download_growth_trend_csv(
+    request: Request,
+    db: Session = Depends(_db_dep),
+    user=Depends(get_current_user_optional),
+    x_session_token: str | None = Header(default=None, alias="X-Session-Token"),
+):
     """Download growth trend analytics as CSV report."""
     trend = compute_trend(settings)
     if not trend.get("metrics"):
         raise HTTPException(status_code=404, detail="No trend data available for export")
+    record_download(
+        db,
+        report_type="growth_trend",
+        report_label="Growth Trend Report",
+        session_token=x_session_token,
+        user_id=user.id if user else None,
+        user_email=user.email if user else None,
+        ip_address=request.client.host if request.client else None,
+    )
     csv_content = export_growth_trend_csv(trend)
     filename = "darinformal_growth_trend_report.csv"
     return Response(
@@ -172,7 +204,14 @@ async def download_growth_trend_csv():
 
 
 @app.get("/api/change/{from_year}/{to_year}/csv", tags=["Change Detection", "Reports"])
-async def download_change_detection_csv(from_year: int, to_year: int):
+async def download_change_detection_csv(
+    from_year: int,
+    to_year: int,
+    request: Request,
+    db: Session = Depends(_db_dep),
+    user=Depends(get_current_user_optional),
+    x_session_token: str | None = Header(default=None, alias="X-Session-Token"),
+):
     """Download change detection results as CSV report."""
     if from_year >= to_year:
         raise HTTPException(status_code=400, detail="from_year must be less than to_year")
@@ -180,6 +219,15 @@ async def download_change_detection_csv(from_year: int, to_year: int):
         result = detect_changes(from_year, to_year, settings)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    record_download(
+        db,
+        report_type="change_detection",
+        report_label=f"Change Detection {from_year}-{to_year}",
+        session_token=x_session_token,
+        user_id=user.id if user else None,
+        user_email=user.email if user else None,
+        ip_address=request.client.host if request.client else None,
+    )
     csv_content = export_change_detection_csv(result)
     filename = f"darinformal_change_{from_year}_{to_year}.csv"
     return Response(

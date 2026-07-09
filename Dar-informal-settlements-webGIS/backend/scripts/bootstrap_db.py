@@ -16,6 +16,7 @@ from sqlalchemy import text
 from config import get_settings
 from db.database import get_engine, session_scope
 from db.repository import is_populated
+from services.auth_service import hash_password
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,32 @@ def bootstrap_database() -> None:
             logger.info("Imported %d settlement features into PostGIS", count)
     except Exception as exc:
         logger.error("Auto-import failed: %s", exc)
+
+    _seed_admin_user(settings)
+
+
+def _seed_admin_user(settings) -> None:
+    """Create default admin account if none exists."""
+    try:
+        with session_scope(settings) as db:
+            existing = db.scalar(text("SELECT COUNT(*) FROM users WHERE role = 'admin'"))
+            if existing and int(existing) > 0:
+                return
+            email = settings.admin_email.lower().strip()
+            pwd_hash = hash_password(settings.admin_password)
+            db.execute(
+                text(
+                    """
+                    INSERT INTO users (email, password_hash, first_name, last_name, role, is_active)
+                    VALUES (:email, :pwd, 'System', 'Administrator', 'admin', TRUE)
+                    ON CONFLICT (email) DO NOTHING
+                    """
+                ),
+                {"email": email, "pwd": pwd_hash},
+            )
+            logger.info("Default admin user seeded: %s", email)
+    except Exception as exc:
+        logger.warning("Admin seed skipped: %s", exc)
 
 
 if __name__ == "__main__":

@@ -5,12 +5,21 @@
 
 const API = (() => {
   const BASE_URL = window.DARINFORMAL_API_URL || '/api';
+  const BASE = BASE_URL;
+
+  function buildHeaders(options = {}) {
+    const headers = { Accept: 'application/json', ...options.headers };
+    if (typeof Auth !== 'undefined') {
+      Object.assign(headers, Auth.authHeaders());
+    }
+    return headers;
+  }
 
   async function request(endpoint, options = {}) {
     const url = `${BASE_URL}${endpoint}`;
     const response = await fetch(url, {
-      headers: { 'Accept': 'application/json', ...options.headers },
       ...options,
+      headers: buildHeaders(options),
     });
 
     if (!response.ok) {
@@ -60,7 +69,9 @@ const API = (() => {
 
     async downloadFile(url, filename) {
       try {
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          headers: typeof Auth !== 'undefined' ? Auth.authHeaders() : {},
+        });
         if (!response.ok) {
           throw new Error(`Download failed: ${response.status}`);
         }
@@ -78,6 +89,9 @@ const API = (() => {
         window.open(url, '_blank', 'noopener');
       }
     },
+
+    BASE,
+    request,
   };
 })();
 

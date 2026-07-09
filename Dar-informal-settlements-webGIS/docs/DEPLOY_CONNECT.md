@@ -25,6 +25,10 @@ Then: **Manual Deploy → Clear build cache & deploy**
 | `DEBUG` | `false` |
 | `USE_POSTGIS` | `true` |
 | `AUTO_IMPORT_ON_STARTUP` | `true` |
+| `JWT_SECRET` | long random string (required for login) |
+| `ADMIN_EMAIL` | admin login email |
+| `ADMIN_PASSWORD` | admin login password (change after first deploy) |
+| `DATABASE_URL` | Render Postgres internal URL (for users & downloads) |
 
 **Delete** `CORS_ORIGINS` if empty. **Start Command** must be **blank**.
 

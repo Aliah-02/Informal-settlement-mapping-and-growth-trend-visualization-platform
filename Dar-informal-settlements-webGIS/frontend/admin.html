@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard | Informal Settlement Mapping</title>
+  <link rel="stylesheet" href="css/site.css" />
+</head>
+<body class="site-body dark-mode">
+  <header class="site-header" id="site-header"></header>
+
+  <main class="site-main">
+    <h1 style="color:var(--gold);margin-bottom:0.5rem;">Admin Dashboard</h1>
+    <p style="color:var(--text-muted);margin-bottom:1.5rem;font-size:0.85rem;">
+      <span class="live-dot"></span> Live monitoring — users, visitors, and downloads
+    </p>
+
+    <div class="admin-grid">
+      <div class="admin-card"><div class="value" id="adm-users">—</div><div class="label">Users Joined</div></div>
+      <div class="admin-card"><div class="value" id="adm-live">—</div><div class="label">Live Users Now</div></div>
+      <div class="admin-card"><div class="value" id="adm-downloads">—</div><div class="label">Total Downloads</div></div>
+      <div class="admin-card"><div class="value" id="adm-daily">—</div><div class="label">Visitors Today</div></div>
+    </div>
+
+    <section style="margin-bottom:1.5rem;">
+      <h2 style="color:var(--lime);font-size:0.95rem;margin-bottom:0.75rem;">Visitor Summary</h2>
+      <div class="admin-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="admin-card"><div class="value" id="adm-monthly">—</div><div class="label">Monthly Visitors</div></div>
+        <div class="admin-card"><div class="value" id="adm-yearly">—</div><div class="label">Yearly Visitors</div></div>
+        <div class="admin-card"><div class="value" id="adm-rate">—</div><div class="label">Download Rate %</div></div>
+      </div>
+    </section>
+
+    <section style="margin-bottom:1.5rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+        <h2 style="color:var(--lime);font-size:0.95rem;">Who Downloaded Reports</h2>
+        <button class="btn-gold" type="button" id="refresh-btn">Refresh</button>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Report</th>
+              <th>Type</th>
+              <th>IP</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="downloads-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2 style="color:var(--lime);font-size:0.95rem;margin-bottom:0.75rem;">Recent Users Joined</h2>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr>
+          </thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <p style="margin-top:1.5rem;">
+      <button class="btn-navy" type="button" id="logout-btn">Logout</button>
+      <a href="index.html" style="margin-left:1rem;color:var(--lime);">← Back to site</a>
+    </p>
+  </main>
+
+  <script src="js/env.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/activity.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/admin.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      Auth.guardAdminPage();
+      SiteNav.renderHeader('admin.html');
+      Theme.init();
+      Activity.init('/admin.html');
+      AdminDashboard.init();
+      document.getElementById('logout-btn').addEventListener('click', () => Auth.logout());
+      document.getElementById('refresh-btn').addEventListener('click', () => AdminDashboard.load());
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About Us | Informal Settlement Mapping and Visualization</title>
+  <link rel="stylesheet" href="css/site.css" />
+</head>
+<body class="site-body dark-mode">
+  <header class="site-header" id="site-header"></header>
+
+  <main class="site-main about-content">
+    <h1 style="color:var(--gold);margin-bottom:1rem;">About Informal Settlement Mapping and Visualization</h1>
+    <p>
+      This WebGIS platform supports spatial analysis and visualization of informal settlements in Dar es Salaam, Tanzania,
+      covering the period 2005 to 2026. The system integrates satellite-derived indices, settlement polygons, and
+      analytics dashboards to help planners, researchers, and communities understand growth trends and risk patterns.
+    </p>
+    <p>
+      The project is developed by LSM2 Group 11 at Ardhi University, Makongo, Dar es Salaam, in collaboration with
+      applied geospatial intelligence initiatives in East Africa.
+    </p>
+    <p><strong>Our mission</strong> is to make informal settlement data accessible, transparent, and actionable for
+      evidence-based urban planning and service delivery.</p>
+    <p>
+      Use the <a href="maps.html">Maps</a> page for interactive exploration, <a href="statistics.html">Statistics</a> for
+      ward and district trends, and the <a href="user-guide.html">User Guide</a> for step-by-step instructions in
+      English and Kiswahili.
+    </p>
+  </main>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="js/env.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/activity.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/theme.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      SiteNav.renderHeader('about.html');
+      SiteNav.renderFooter();
+      Theme.init();
+      Activity.init('/about.html');
+    });
+  </script>
+</body>
+</html>

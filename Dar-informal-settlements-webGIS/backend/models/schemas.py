@@ -1,5 +1,6 @@
 """Pydantic schemas for API request/response models."""
 
+from datetime import datetime
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -89,3 +90,37 @@ class HealthResponse(BaseModel):
     version: str
     database: str
     data_years_available: list[int]
+
+
+class SignupRequest(BaseModel):
+    first_name: str = Field(..., min_length=1, max_length=120)
+    last_name: str = Field(..., min_length=1, max_length=120)
+    email: str = Field(..., min_length=3, max_length=255)
+    mobile: str | None = Field(default=None, max_length=32)
+    password: str = Field(..., min_length=6, max_length=128)
+    confirm_password: str = Field(..., min_length=6, max_length=128)
+    company_name: str | None = Field(default=None, max_length=255)
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(..., min_length=3, max_length=255)
+    password: str = Field(..., min_length=1, max_length=128)
+
+
+class UserPublic(BaseModel):
+    id: int
+    email: str
+    first_name: str
+    last_name: str
+    mobile: str | None = None
+    company_name: str | None = None
+    role: str
+    created_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserPublic
