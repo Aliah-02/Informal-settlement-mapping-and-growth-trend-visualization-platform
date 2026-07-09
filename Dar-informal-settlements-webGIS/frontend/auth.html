@@ -135,6 +135,12 @@
       if (Auth.isLoggedIn()) {
         Auth.redirectAfterLogin(Auth.getUser());
       }
+
+      if (window.location.hash === '#signup') {
+        document.getElementById('tab-signup').click();
+      } else if (window.location.hash === '#login') {
+        document.getElementById('tab-login').click();
+      }
     });
   </script>
 </body>

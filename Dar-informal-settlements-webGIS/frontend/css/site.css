@@ -97,8 +97,8 @@ a { color: inherit; text-decoration: none; }
   gap: 0.6rem;
 }
 
-.btn-search,
-.btn-theme {
+.btn-theme,
+.btn-user {
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -112,8 +112,104 @@ a { color: inherit; text-decoration: none; }
   transition: background 0.15s;
 }
 
-.btn-search:hover,
-.btn-theme:hover { background: rgba(255, 255, 255, 0.22); }
+.btn-theme:hover,
+.btn-user:hover { background: rgba(255, 255, 255, 0.22); }
+
+.user-menu { position: relative; }
+
+.user-menu-dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 200px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 0.5rem 0;
+  z-index: 3000;
+}
+
+.user-menu-dropdown.open { display: block; }
+
+.user-menu-dropdown a,
+.user-menu-dropdown button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 1rem;
+  color: var(--text-main);
+  background: none;
+  border: none;
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.user-menu-dropdown a:hover,
+.user-menu-dropdown button:hover {
+  background: rgba(212, 225, 87, 0.12);
+  color: var(--gold);
+}
+
+.user-menu-name {
+  padding: 0.6rem 1rem 0.15rem;
+  font-weight: 700;
+  color: var(--gold);
+  font-size: 0.85rem;
+}
+
+.user-menu-email {
+  padding: 0 1rem 0.5rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.25rem;
+}
+
+.stats-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stats-panel-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.stats-table-wrap {
+  margin-top: 0;
+  border-radius: 0 0 14px 14px;
+}
+
+.stats-hint {
+  font-size: 0.68rem;
+  color: var(--navy);
+  opacity: 0.75;
+}
+
+.stats-filter-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.btn-download-sm {
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  border-radius: 6px;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
 
 /* Hero / sections */
 .site-main { padding: 1.25rem 1.5rem 2rem; }

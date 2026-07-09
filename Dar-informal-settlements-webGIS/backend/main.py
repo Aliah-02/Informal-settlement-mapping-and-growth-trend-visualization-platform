@@ -32,6 +32,7 @@ from services.data_source import (
     use_postgis,
 )
 from services.loader import to_feature_collection
+from services.location_analytics import compute_location_analytics, export_location_csv
 from services.metrics import compute_trend, compute_year_metrics
 from services.reports import export_change_detection_csv, export_growth_trend_csv
 
@@ -204,6 +205,49 @@ async def get_metrics_trend():
     return TrendResponse(**result)
 
 
+@app.get("/api/metrics/by-location", tags=["Analytics"])
+async def get_location_analytics(
+    year: Optional[int] = Query(None, description="Analysis year (default: latest)"),
+):
+    """Settlement analytics grouped by district and ward from map coordinates."""
+    return compute_location_analytics(year=year, settings=settings)
+
+
+@app.get("/api/metrics/by-location/csv", tags=["Analytics", "Reports"])
+async def download_location_csv(
+    request: Request,
+    district: Optional[str] = Query(None, description="District name filter"),
+    year: Optional[int] = Query(None),
+    db: Session = Depends(_db_dep),
+    user=Depends(get_current_user_optional),
+    x_session_token: str | None = Header(default=None, alias="X-Session-Token"),
+):
+    """Download location-based analytics CSV (all districts or one district)."""
+    analytics = compute_location_analytics(year=year, settings=settings)
+    if not analytics.get("districts"):
+        raise HTTPException(status_code=404, detail="No location data available")
+    try:
+        record_download(
+            db,
+            report_type="location_report",
+            report_label=f"Location Report {district or 'All'} {analytics.get('year', '')}",
+            session_token=x_session_token,
+            user_id=user.id if user else None,
+            user_email=user.email if user else None,
+            ip_address=request.client.host if request.client else None,
+        )
+    except Exception as exc:
+        logger.warning("Download log skipped: %s", exc)
+    csv_content = export_location_csv(analytics, district=district)
+    slug = (district or "all").lower().replace(" ", "_")
+    filename = f"darinformal_location_{slug}_{analytics.get('year', 'report')}.csv"
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @app.get("/api/metrics/trend/csv", tags=["Analytics", "Reports"])
 async def download_growth_trend_csv(
     request: Request,
@@ -215,15 +259,18 @@ async def download_growth_trend_csv(
     trend = compute_trend(settings)
     if not trend.get("metrics"):
         raise HTTPException(status_code=404, detail="No trend data available for export")
-    record_download(
-        db,
-        report_type="growth_trend",
-        report_label="Growth Trend Report",
-        session_token=x_session_token,
-        user_id=user.id if user else None,
-        user_email=user.email if user else None,
-        ip_address=request.client.host if request.client else None,
-    )
+    try:
+        record_download(
+            db,
+            report_type="growth_trend",
+            report_label="Growth Trend Report",
+            session_token=x_session_token,
+            user_id=user.id if user else None,
+            user_email=user.email if user else None,
+            ip_address=request.client.host if request.client else None,
+        )
+    except Exception as exc:
+        logger.warning("Download log skipped: %s", exc)
     csv_content = export_growth_trend_csv(trend)
     filename = "darinformal_growth_trend_report.csv"
     return Response(
@@ -249,15 +296,18 @@ async def download_change_detection_csv(
         result = detect_changes(from_year, to_year, settings)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    record_download(
-        db,
-        report_type="change_detection",
-        report_label=f"Change Detection {from_year}-{to_year}",
-        session_token=x_session_token,
-        user_id=user.id if user else None,
-        user_email=user.email if user else None,
-        ip_address=request.client.host if request.client else None,
-    )
+    try:
+        record_download(
+            db,
+            report_type="change_detection",
+            report_label=f"Change Detection {from_year}-{to_year}",
+            session_token=x_session_token,
+            user_id=user.id if user else None,
+            user_email=user.email if user else None,
+            ip_address=request.client.host if request.client else None,
+        )
+    except Exception as exc:
+        logger.warning("Download log skipped: %s", exc)
     csv_content = export_change_detection_csv(result)
     filename = f"darinformal_change_{from_year}_{to_year}.csv"
     return Response(

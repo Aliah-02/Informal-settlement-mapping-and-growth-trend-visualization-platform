@@ -11,7 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from config import Settings, get_settings
-from db.database import get_session, is_database_configured
+from db.database import get_session, is_database_configured, is_database_configured
 from db.models import User
 from models.schemas import (
     AuthResponse,
@@ -65,13 +65,18 @@ def get_current_user_optional(
     db: Session = Depends(_db_dep),
     settings: Settings = Depends(get_settings),
 ) -> User | None:
+    if not is_database_configured():
+        return None
     if not authorization or not authorization.startswith("Bearer "):
         return None
     token = authorization[7:]
     payload = decode_access_token(token, settings)
     if not payload or not payload.get("sub"):
         return None
-    user = db.scalar(select(User).where(User.email == payload["sub"]))
+    try:
+        user = db.scalar(select(User).where(User.email == payload["sub"]))
+    except SQLAlchemyError:
+        return None
     if not user or not user.is_active:
         return None
     return user
