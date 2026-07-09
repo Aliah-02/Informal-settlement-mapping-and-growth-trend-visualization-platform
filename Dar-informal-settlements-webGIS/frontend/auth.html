@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login / Sign Up | Informal Settlement Mapping</title>
+  <link rel="stylesheet" href="css/site.css" />
+</head>
+<body class="site-body site-light">
+  <header class="site-header" id="site-header"></header>
+
+  <div class="auth-page">
+    <section class="auth-card">
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="tab-login">Login</button>
+        <button type="button" class="auth-tab" id="tab-signup">Sign Up</button>
+      </div>
+
+      <div id="auth-error" class="auth-error"></div>
+
+      <form id="login-form">
+        <h2>Login to your account</h2>
+        <div class="auth-grid">
+          <div class="auth-field" style="grid-column:1/-1;">
+            <label for="login-email">Email Id</label>
+            <input id="login-email" name="email" type="email" placeholder="info@weledi.com" required />
+          </div>
+          <div class="auth-field" style="grid-column:1/-1;">
+            <label for="login-password">Password</label>
+            <input id="login-password" name="password" type="password" placeholder="••••••••••" required />
+          </div>
+        </div>
+        <button class="btn-navy" type="submit">Login</button>
+      </form>
+
+      <form id="signup-form" style="display:none;">
+        <h2>Sign up into your account</h2>
+        <div class="auth-grid">
+          <div class="auth-field">
+            <label for="first_name">First Name</label>
+            <input id="first_name" name="first_name" placeholder="Enter your name.." required />
+          </div>
+          <div class="auth-field">
+            <label for="last_name">Last Name</label>
+            <input id="last_name" name="last_name" placeholder="Enter your name.." required />
+          </div>
+          <div class="auth-field">
+            <label for="email">Email Id</label>
+            <input id="email" name="email" type="email" placeholder="info@weledi.com" required />
+          </div>
+          <div class="auth-field">
+            <label for="mobile">Mobile No.</label>
+            <input id="mobile" name="mobile" placeholder="+255 676767877" />
+          </div>
+          <div class="auth-field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" placeholder="••••••••••" required minlength="6" />
+          </div>
+          <div class="auth-field">
+            <label for="confirm_password">Confirm Password</label>
+            <input id="confirm_password" name="confirm_password" type="password" placeholder="••••••••••" required minlength="6" />
+          </div>
+          <div class="auth-field" style="grid-column:1/-1;">
+            <label for="company_name">Company Name (optional)</label>
+            <input id="company_name" name="company_name" placeholder="Enter company name ...(optional)" />
+          </div>
+        </div>
+        <button class="btn-navy" type="submit">Sign up</button>
+      </form>
+    </section>
+
+    <aside class="auth-side" aria-hidden="true">🗺️</aside>
+  </div>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="js/env.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/activity.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/theme.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      SiteNav.renderHeader('auth.html');
+      SiteNav.renderFooter();
+      Theme.init();
+      Activity.init('/auth.html');
+
+      const loginForm = document.getElementById('login-form');
+      const signupForm = document.getElementById('signup-form');
+      const errEl = document.getElementById('auth-error');
+
+      function showError(msg) {
+        errEl.textContent = msg;
+        errEl.style.display = 'block';
+      }
+
+      document.getElementById('tab-login').addEventListener('click', () => {
+        loginForm.style.display = 'block';
+        signupForm.style.display = 'none';
+        document.getElementById('tab-login').classList.add('active');
+        document.getElementById('tab-signup').classList.remove('active');
+        errEl.style.display = 'none';
+      });
+
+      document.getElementById('tab-signup').addEventListener('click', () => {
+        loginForm.style.display = 'none';
+        signupForm.style.display = 'block';
+        document.getElementById('tab-signup').classList.add('active');
+        document.getElementById('tab-login').classList.remove('active');
+        errEl.style.display = 'none';
+      });
+
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          const data = await Auth.login(loginForm);
+          Auth.redirectAfterLogin(data.user);
+        } catch (err) {
+          showError(err.message);
+        }
+      });
+
+      signupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          const data = await Auth.signup(signupForm);
+          Auth.redirectAfterLogin(data.user);
+        } catch (err) {
+          showError(err.message);
+        }
+      });
+
+      if (Auth.isLoggedIn()) {
+        Auth.redirectAfterLogin(Auth.getUser());
+      }
+    });
+  </script>
+</body>
+</html>

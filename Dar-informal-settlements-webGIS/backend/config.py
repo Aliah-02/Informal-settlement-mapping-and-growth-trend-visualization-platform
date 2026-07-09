@@ -84,6 +84,10 @@ class Settings(BaseSettings):
     isi_weight_bsi: float = 0.2
     isi_weight_fragmentation: float = 0.25
 
+    jwt_secret: str = Field(default="darinformal-change-me-in-production", validation_alias="JWT_SECRET")
+    admin_email: str = Field(default="admin@lsm2group11.com", validation_alias="ADMIN_EMAIL")
+    admin_password: str = Field(default="Admin@2026!", validation_alias="ADMIN_PASSWORD")
+
     @model_validator(mode="before")
     @classmethod
     def apply_env(cls, data):

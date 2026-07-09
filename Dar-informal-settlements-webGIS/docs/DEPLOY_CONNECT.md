@@ -29,6 +29,32 @@
 
 **Your Vercel map should already show settlement polygons** using GeoJSON fallback.
 
+### Render environment variables
+
+| Key | Value |
+|-----|-------|
+| `FRONTEND_URL` | `https://informal-settlement-mapping-and-gro.vercel.app` |
+| `DEBUG` | `false` |
+| `USE_POSTGIS` | `true` |
+| `AUTO_IMPORT_ON_STARTUP` | `true` |
+| `JWT_SECRET` | long random string (required for login) |
+| `ADMIN_EMAIL` | admin login email |
+| `ADMIN_PASSWORD` | admin login password (change after first deploy) |
+| `DATABASE_URL` | Render Postgres internal URL (for users & downloads) |
+
+**Delete** `CORS_ORIGINS` if empty. **Start Command** must be **blank**.
+
+Test: `https://informal-settlement-mapping-and-growth-sm5w.onrender.com/api/health`
+
+---
+
+## Auth & admin dashboard
+
+- **Sign up / Login:** `/auth.html`
+- **Admin dashboard:** `/admin.html` (admin role only)
+- Default admin is created on first boot from `ADMIN_EMAIL` / `ADMIN_PASSWORD`
+- Visitor stats and download logs require `DATABASE_URL` linked on Render
+
 ---
 
 ## Enable PostGIS (optional upgrade)

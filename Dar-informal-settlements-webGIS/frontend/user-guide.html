@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Guide | Informal Settlement Mapping</title>
+  <link rel="stylesheet" href="css/site.css" />
+</head>
+<body class="site-body dark-mode">
+  <header class="site-header" id="site-header"></header>
+
+  <main class="site-main">
+    <h1 style="color:var(--gold);margin-bottom:1rem;">User Guide / Mwongozo wa Mtumiaji</h1>
+
+    <div class="guide-lang-toggle">
+      <button class="auth-tab active" type="button" id="btn-en">English</button>
+      <button class="auth-tab" type="button" id="btn-sw">Kiswahili</button>
+    </div>
+
+    <div id="guide-content"></div>
+  </main>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="js/env.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/activity.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/user-guide.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      SiteNav.renderHeader('user-guide.html');
+      SiteNav.renderFooter();
+      Theme.init();
+      Activity.init('/user-guide.html');
+      UserGuide.init();
+    });
+  </script>
+</body>
+</html>

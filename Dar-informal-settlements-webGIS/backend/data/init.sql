@@ -116,3 +116,61 @@ COMMENT ON TABLE settlements IS 'Informal settlement polygons with ISI attribute
 COMMENT ON TABLE yearly_metrics IS 'Pre-computed dashboard metrics per analysis year';
 COMMENT ON TABLE change_detection IS 'Temporal settlement change records between analysis years';
 COMMENT ON VIEW v_settlements_all IS 'All settlement polygons across analysis years';
+
+-- ── Platform users & activity tracking ────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(120) NOT NULL,
+    last_name VARCHAR(120) NOT NULL,
+    mobile VARCHAR(32),
+    company_name VARCHAR(255),
+    role VARCHAR(20) NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    last_login_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id SERIAL PRIMARY KEY,
+    session_token VARCHAR(64) UNIQUE NOT NULL,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    ip_address VARCHAR(64),
+    user_agent TEXT,
+    last_seen_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_last_seen ON user_sessions(last_seen_at);
+
+CREATE TABLE IF NOT EXISTS page_visits (
+    id SERIAL PRIMARY KEY,
+    session_token VARCHAR(64) NOT NULL,
+    page_path VARCHAR(512) NOT NULL,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    ip_address VARCHAR(64),
+    visited_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_page_visits_session ON page_visits(session_token);
+CREATE INDEX IF NOT EXISTS idx_page_visits_visited_at ON page_visits(visited_at);
+
+CREATE TABLE IF NOT EXISTS download_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    user_email VARCHAR(255),
+    session_token VARCHAR(64),
+    report_type VARCHAR(64) NOT NULL,
+    report_label VARCHAR(255) NOT NULL,
+    ip_address VARCHAR(64),
+    downloaded_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_download_logs_user ON download_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_download_logs_downloaded_at ON download_logs(downloaded_at);

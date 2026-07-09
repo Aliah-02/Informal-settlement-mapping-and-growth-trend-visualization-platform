@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Statistics | Informal Settlement Mapping and Visualization</title>
+  <link rel="stylesheet" href="css/site.css" />
+</head>
+<body class="site-body dark-mode">
+  <header class="site-header" id="site-header"></header>
+
+  <main class="site-main">
+    <div class="stats-filters">
+      <select id="district-filter" aria-label="District">
+        <option>Kinondoni</option>
+        <option>Ilala</option>
+        <option>Temeke</option>
+        <option>Ubungo</option>
+      </select>
+      <div>
+        <label>from <select id="from-year"><option>2018</option><option>2019</option><option>2020</option></select></label>
+        <label style="margin-left:0.5rem;">to <select id="to-year"><option>2019</option><option>2020</option><option>2026</option></select></label>
+      </div>
+    </div>
+
+    <div class="stats-main-chart">
+      <canvas id="stats-line-chart"></canvas>
+    </div>
+
+    <div class="stats-bottom">
+      <section>
+        <div class="panel-lime" style="display:flex;justify-content:space-between;align-items:center;">
+          <h3>Trends of informal settlements in Wards</h3>
+          <span>☰</span>
+        </div>
+        <div class="panel-dark" style="margin-top:0;border-radius:0 0 14px 14px;">
+          <table class="ward-table">
+            <thead>
+              <tr><th>Symbol</th><th>Name</th><th>Settlements</th><th>% Changes</th></tr>
+            </thead>
+            <tbody id="ward-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel-dark">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3 style="color:var(--gold);">District growth</h3>
+          <select id="growth-year"><option>for 2019</option><option>for 2020</option><option>for 2026</option></select>
+        </div>
+        <div class="district-bars" id="district-bars"></div>
+        <div id="district-legend" style="margin-top:1rem;font-size:0.78rem;"></div>
+      </section>
+    </div>
+
+    <p style="margin-top:1.5rem;color:var(--text-muted);font-size:0.85rem;line-height:1.6;">
+      Kinondoni has experienced rapid population growth and urbanization over the years. Many informal settlements developed in different parts of the district, leading to challenges in infrastructure, land use, and service delivery. Today, Kinondoni remains one of the areas with significant informal settlement expansion in Dar es Salaam.
+    </p>
+
+    <div class="stats-strip" style="margin-top:1.25rem;">
+      <div class="stat-item"><div class="num" id="stat-daily">—</div><div class="lbl">Daily Visitors</div></div>
+      <div class="stat-item"><div class="num" id="stat-monthly">—</div><div class="lbl">Monthly Visitors</div></div>
+      <div class="stat-item"><div class="num" id="stat-yearly">—</div><div class="lbl">Yearly Visitors</div></div>
+    </div>
+  </main>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="js/env.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/activity.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/theme.js"></script>
+  <script>
+    const WARDS = [
+      { sym: 'KW', name: 'Kawe', settlements: 125, change: 12.5 },
+      { sym: 'MP', name: 'Mabwe Pande', settlements: 98, change: 21.75 },
+      { sym: 'MK', name: 'Mikocheni', settlements: 156, change: 8.3 },
+      { sym: 'MS', name: 'Masaki', settlements: 87, change: 15.2 },
+      { sym: 'KINO', name: 'Kinondoni', settlements: 436, change: 18.9 },
+      { sym: 'TGT', name: 'Tegeta', settlements: 203, change: 11.4 },
+      { sym: 'K/NYM', name: 'Kijitonyama', settlements: 312, change: 4.9 },
+      { sym: 'M/BEACH', name: 'Mbezi Beach', settlements: 178, change: 9.7 },
+    ];
+
+    const DISTRICTS = [
+      { name: 'TEMEKE', pct: 81.57, color: '#3b82f6' },
+      { name: 'UBUNGO', pct: 63.25, color: '#8b5cf6' },
+      { name: 'KINONDONI', pct: 52.95, color: '#eab308' },
+      { name: 'ILALA', pct: 47.29, color: '#22c55e' },
+    ];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      SiteNav.renderHeader('statistics.html');
+      SiteNav.renderFooter();
+      Theme.init();
+      Activity.init('/statistics.html');
+
+      document.getElementById('ward-tbody').innerHTML = WARDS.map(w => `
+        <tr><td>${w.sym}</td><td>${w.name}</td><td class="cyan">${w.settlements}</td><td class="cyan">${w.change}%</td></tr>
+      `).join('');
+
+      document.getElementById('district-bars').innerHTML = DISTRICTS.map(d => `
+        <div class="district-bar-row">
+          <span style="width:80px;">${d.name}</span>
+          <div class="district-bar-track"><div class="district-bar-fill" style="width:${d.pct}%;background:${d.color}"></div></div>
+          <span>${d.pct}%</span>
+        </div>
+      `).join('');
+
+      document.getElementById('district-legend').innerHTML = DISTRICTS.map(d => `
+        <div style="margin-bottom:0.35rem;"><span style="color:${d.color}">●</span> ${d.name}: ${d.pct}%</div>
+      `).join('');
+
+      try {
+        const trend = await API.getMetricsTrend();
+        const labels = ['Aug 2018','Sep','Oct','Nov','Dec','Jan 2019','Feb','Mar','Apr','May'];
+        const base = trend.metrics?.[trend.metrics.length - 1]?.total_settlements || 2000;
+        new Chart(document.getElementById('stats-line-chart'), {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              { label: 'Settlements', data: labels.map((_, i) => Math.round(base * (0.85 + i * 0.02)), borderColor: '#3b82f6', tension: 0.3 },
+              { label: 'Area trend', data: labels.map((_, i) => Math.round(base * 0.7 * (0.9 + i * 0.015)), borderColor: '#94a3b8', tension: 0.3 },
+            ],
+          },
+          options: { responsive: true, maintainAspectRatio: false },
+        });
+      } catch (e) { console.warn(e); }
+    });
+  </script>
+</body>
+</html>
