@@ -42,6 +42,19 @@ const API = (() => {
       return request('/metrics/trend');
     },
 
+    async getLocationAnalytics(year) {
+      const qs = year ? `?year=${year}` : '';
+      return request(`/metrics/by-location${qs}`);
+    },
+
+    getLocationCsvUrl(year, district) {
+      const params = new URLSearchParams();
+      if (year) params.set('year', year);
+      if (district) params.set('district', district);
+      const qs = params.toString();
+      return `${BASE_URL}/metrics/by-location/csv${qs ? '?' + qs : ''}`;
+    },
+
     async getChangeDetection(fromYear, toYear) {
       return request(`/change/${fromYear}/${toYear}`);
     },
