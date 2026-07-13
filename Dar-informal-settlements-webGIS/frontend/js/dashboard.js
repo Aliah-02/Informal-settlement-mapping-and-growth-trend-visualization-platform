@@ -77,7 +77,7 @@ const Dashboard = (() => {
               borderWidth: 1,
             },
             {
-              label: 'High Risk Area (ha)',
+              label: 'High Probability Area (ha)',
               data: metrics.map((m) => m.high_risk_area_ha),
               backgroundColor: 'rgba(239, 68, 68, 0.6)',
               borderColor: '#ef4444',
@@ -118,7 +118,7 @@ const Dashboard = (() => {
       });
     }
 
-    // Risk distribution doughnut for latest year
+    // Probability distribution doughnut for latest year
     const riskCtx = document.getElementById('risk-chart');
     if (riskCtx && metrics.length > 0) {
       const latest = metrics[metrics.length - 1];
@@ -126,7 +126,7 @@ const Dashboard = (() => {
       riskChart = new Chart(riskCtx, {
         type: 'doughnut',
         data: {
-          labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+          labels: ['Low Probability', 'Medium Probability', 'High Probability'],
           datasets: [{
             data: [latest.low_risk_area_ha, latest.medium_risk_area_ha, latest.high_risk_area_ha],
             backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
@@ -152,9 +152,9 @@ const Dashboard = (() => {
     const total = latest.total_area_ha || 1;
 
     container.innerHTML = [
-      { level: 'high', label: 'High Risk', area: latest.high_risk_area_ha, count: latest.high_risk_count, color: '#ef4444' },
-      { level: 'medium', label: 'Medium Risk', area: latest.medium_risk_area_ha, count: latest.medium_risk_count, color: '#f59e0b' },
-      { level: 'low', label: 'Low Risk', area: latest.low_risk_area_ha, count: latest.low_risk_count, color: '#22c55e' },
+      { level: 'high', label: 'High Probability', area: latest.high_risk_area_ha, count: latest.high_risk_count, color: '#ef4444' },
+      { level: 'medium', label: 'Medium Probability', area: latest.medium_risk_area_ha, count: latest.medium_risk_count, color: '#f59e0b' },
+      { level: 'low', label: 'Low Probability', area: latest.low_risk_area_ha, count: latest.low_risk_count, color: '#22c55e' },
     ].map((r) => `
       <div class="risk-bar-item">
         <div class="risk-bar-header">

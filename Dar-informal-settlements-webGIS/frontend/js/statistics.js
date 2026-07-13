@@ -157,7 +157,7 @@ const Statistics = (() => {
     const district = document.getElementById('district-filter')?.value || 'Kinondoni';
     const d = loc.districts?.find((x) => x.district === district);
     if (!d) return;
-    el.textContent = `${district} has ${d.settlements} mapped informal settlements covering ${d.total_area_ha} ha in ${loc.year}. Average ISI is ${d.avg_isi} with ${d.high_risk_count} high-risk clusters. Growth since the previous analysis year is ${d.growth_pct}%.`;
+    el.textContent = `${district} has ${d.settlements} mapped unplanned settlements covering ${d.total_area_ha} ha in ${loc.year}. Average ISI is ${d.avg_isi} with ${d.high_risk_count} high-probability clusters. Growth since the previous analysis year is ${d.growth_pct}%.`;
   }
 
   async function downloadReport(district) {

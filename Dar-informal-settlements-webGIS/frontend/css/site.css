@@ -1,4 +1,4 @@
-/* Site-wide layout — Informal Settlement Mapping mockup theme */
+/* Site-wide layout — Unplanned Settlement Mapping mockup theme */
 
 :root {
   --navy: #0a192f;
@@ -290,7 +290,7 @@ a { color: inherit; text-decoration: none; }
   color: #cbd5e1;
   padding: 2rem 1.5rem;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
   font-size: 0.82rem;
 }
@@ -579,6 +579,45 @@ body.maps-page .site-main {
 }
 body.maps-page .app-main {
   height: 100%;
+}
+
+.map-fullscreen-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 850;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-main);
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow);
+  transition: background 0.15s;
+}
+
+.map-fullscreen-btn:hover {
+  background: var(--bg-panel);
+}
+
+.map-panel:fullscreen {
+  background: var(--bg-primary);
+}
+
+.map-panel:fullscreen #map {
+  height: 100% !important;
+}
+
+.map-legend-probability h4 {
+  color: var(--gold);
+}
+
+.map-legend-probability .legend-item {
+  font-weight: 500;
 }
 
 @media (max-width: 1000px) {

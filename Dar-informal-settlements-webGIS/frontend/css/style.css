@@ -448,7 +448,8 @@ html, body {
   color: var(--text-primary);
   line-height: 1.2;
 }
-.kpi-value.high-risk { color: var(--danger); }
+.kpi-value.high-risk,
+.kpi-value.high-probability { color: var(--danger); }
 .kpi-value.positive { color: var(--success); }
 .kpi-value.negative { color: var(--danger); }
 
@@ -538,7 +539,8 @@ html, body {
 .settlement-popup .leaflet-popup-tip { background: var(--bg-secondary); }
 
 .popup-content h3 { font-size: 0.9rem; margin-bottom: 0.4rem; }
-.popup-risk {
+.popup-risk,
+.popup-probability {
   display: inline-block;
   padding: 0.2rem 0.5rem;
   border-radius: 4px;

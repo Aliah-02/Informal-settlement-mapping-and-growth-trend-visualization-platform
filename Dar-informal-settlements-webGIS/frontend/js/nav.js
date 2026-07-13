@@ -63,7 +63,7 @@ const SiteNav = (() => {
     }
 
     mount.innerHTML = `
-      <div class="site-brand">Informal Settlement Mapping and Visualization</div>
+      <div class="site-brand">Unplanned Settlement Mapping and Visualization</div>
       <nav class="site-nav" aria-label="Main">
         ${PAGES.map((p) => `
           <a href="${p.href}" class="${activePage === p.href ? 'active' : ''}">${p.label}</a>
@@ -92,12 +92,6 @@ const SiteNav = (() => {
         <h4>RELATED LINKS</h4>
         <p><a href="https://ahmiea.org" target="_blank" rel="noopener">Applied Human Machine Intelligence in East Africa</a></p>
         <p><a href="https://www.nbs.go.tz" target="_blank" rel="noopener">National Statistical Offices Websites</a></p>
-      </div>
-      <div>
-        <h4>E-feedback</h4>
-        <p>Tell us what you think</p>
-        <input type="email" placeholder="Your email" aria-label="Feedback email" />
-        <button class="btn-gold" type="button">Submit</button>
       </div>
     `;
   }
