@@ -18,7 +18,8 @@ const UserGuide = (() => {
           title: '2. Exploring the Map',
           steps: [
             'On the Maps page, drag the year slider (2005–2026) to view settlement layers for each analysis year.',
-            'Click settlement polygons to see ISI score, risk level, area, and population proxy.',
+            'Click settlement polygons to see ISI score, probability level, area, and population proxy.',
+            'Use the fullscreen button (⛶) on the map panel to expand the map view.',
             'Enable Change Detection Mode to compare two years and highlight new, expanded, or contracted settlements.',
           ],
         },
@@ -55,7 +56,8 @@ const UserGuide = (() => {
           title: '2. Kuchunguza Ramani',
           steps: [
             'Kwenye ukurasa wa Maps, songesha kislipta cha mwaka (2005–2026) kuona tabaka la makazi kwa kila mwaka.',
-            'Bofya poligoni za makazi kuona alama ya ISI, kiwango cha hatari, eneo, na makadirio ya idadi ya watu.',
+            'Bofya poligoni za makazi kuona alama ya ISI, kiwango cha uwezekano, eneo, na makadirio ya idadi ya watu.',
+            'Tumia kitufe cha skrini nzima (⛶) kwenye paneli ya ramani kupanua mwonekano wa ramani.',
             'Washa Change Detection Mode kulinganisha miaka miwili na kuonyesha makazi mapya, yaliyoongezeka, au kupungua.',
           ],
         },

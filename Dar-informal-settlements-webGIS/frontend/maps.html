@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Interactive WebGIS map — Informal Settlement Mapping, Dar es Salaam" />
-  <title>Maps | Informal Settlement Mapping and Visualization</title>
+  <meta name="description" content="Interactive WebGIS map — Unplanned Settlement Mapping, Dar es Salaam" />
+  <title>Maps | Unplanned Settlement Mapping and Visualization</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <link rel="stylesheet" href="css/site.css" />
   <link rel="stylesheet" href="css/style.css" />
@@ -15,6 +15,7 @@
 
   <main class="site-main app-main">
     <section class="map-panel">
+      <button type="button" id="map-fullscreen-btn" class="map-fullscreen-btn" title="View fullscreen" aria-label="Toggle fullscreen map">⛶</button>
       <div id="map"></div>
       <div id="map-loading" class="map-loading">
         <div class="spinner"></div>
@@ -43,11 +44,11 @@
         <button id="apply-change-btn" class="btn-primary">Apply</button>
       </div>
 
-      <div class="map-legend">
-        <h4>Informal Settlement Index (ISI)</h4>
-        <div class="legend-item"><span class="legend-swatch" style="background:#22c55e"></span> Low Risk &lt; 0.2</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:#f59e0b"></span> Medium 0.2 – 0.5</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:#ef4444"></span> High Risk &gt; 0.5</div>
+      <div class="map-legend map-legend-probability">
+        <h4>Unplanned Settlement Probability (ISI)</h4>
+        <div class="legend-item"><span class="legend-swatch" style="background:#22c55e"></span> Low Probability &lt; 0.2</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#f59e0b"></span> Medium Probability 0.2 – 0.5</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#ef4444"></span> High Probability &gt; 0.5</div>
         <div class="legend-formula">ISI = 0.3·NDBI + 0.25·(1−NDVI) + 0.2·BSI + 0.25·Frag</div>
         <div class="data-source-label" id="data-source-label"></div>
       </div>
@@ -64,7 +65,7 @@
         <div class="kpi-card"><div class="kpi-label">Settlements</div><div class="kpi-value" id="kpi-settlements">—</div></div>
         <div class="kpi-card"><div class="kpi-label">Total Area</div><div class="kpi-value" id="kpi-area">—</div></div>
         <div class="kpi-card"><div class="kpi-label">Avg. ISI</div><div class="kpi-value" id="kpi-isi">—</div></div>
-        <div class="kpi-card"><div class="kpi-label">High Risk Area</div><div class="kpi-value high-risk" id="kpi-high-risk">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">High Probability Area</div><div class="kpi-value high-probability" id="kpi-high-risk">—</div></div>
         <div class="kpi-card"><div class="kpi-label">Est. Population</div><div class="kpi-value" id="kpi-population">—</div></div>
         <div class="kpi-card"><div class="kpi-label">Area Growth</div><div class="kpi-value" id="kpi-growth">—</div></div>
       </div>
@@ -80,11 +81,11 @@
         <canvas id="isi-chart"></canvas>
       </div>
       <div class="chart-container chart-small">
-        <h3 class="chart-title">Risk Distribution (Latest Year)</h3>
+        <h3 class="chart-title">Probability Distribution (Latest Year)</h3>
         <canvas id="risk-chart"></canvas>
       </div>
       <div class="risk-breakdown-section">
-        <h3 class="chart-title">Risk Area Breakdown</h3>
+        <h3 class="chart-title">Probability Area Breakdown</h3>
         <div id="risk-breakdown" class="risk-breakdown"></div>
       </div>
     </aside>
@@ -109,6 +110,7 @@
       Activity.init('/maps.html');
 
       DarMap.init('map');
+      DarMap.initFullscreen();
 
       try {
         const health = await API.getHealth();
