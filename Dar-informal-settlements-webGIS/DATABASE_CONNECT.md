@@ -61,7 +61,28 @@ Render will auto-redeploy the API.
 | `USE_POSTGIS` | `true` | Enable PostGIS mode |
 | `AUTO_IMPORT_ON_STARTUP` | `true` | Import GeoJSON on first boot |
 
-**Start Command** must be **blank**. **Root Directory** must be **empty** (uses repo root `Dockerfile`).
+**Start Command** must be **blank** when using **Docker**. **Root Directory** must be **empty** (uses repo root `Dockerfile`).
+
+### Render runtime settings (important)
+
+| Setting | Correct value |
+|---------|----------------|
+| **Runtime** | **Docker** (recommended) |
+| **Dockerfile Path** | `./Dockerfile` |
+| **Docker Context** | `.` (repository root) |
+| **Build Command** | *(leave empty for Docker)* |
+| **Start Command** | *(leave empty for Docker)* |
+
+If the service is set to **Python** instead of Docker, Render runs `pip install -r requirements.txt` at the repo root. This repo now includes root `requirements.txt`, `runtime.txt` (Python 3.12), and `start.sh` for that path — but **Docker is strongly recommended** because GeoPandas/Rasterio need system GDAL libraries.
+
+**Wrong settings that cause build failure:**
+
+```
+ERROR: Could not open requirements file: requirements.txt
+Using Python version 3.14.x
+```
+
+Fix: In Render → your web service → **Settings** → set **Runtime** to **Docker**, **Dockerfile Path** to `./Dockerfile`, clear custom Build/Start commands, then **Manual Deploy**.
 
 ---
 
@@ -171,6 +192,8 @@ On API startup, `bootstrap_db.py` creates:
 
 | Problem | Solution |
 |---------|----------|
+| `Could not open requirements file: requirements.txt` | Switch Runtime to **Docker** with `./Dockerfile`, or redeploy after pulling latest `main` (root `requirements.txt` added) |
+| Build uses Python 3.14 | Set Runtime to **Docker**, or ensure `runtime.txt` at repo root pins `python-3.12.12` |
 | CORS / "Failed to fetch" on login | Redeploy Render after setting `FRONTEND_URL`; ensure `DATABASE_URL` is linked |
 | `database.connected: false` | Add `DATABASE_URL` from Render Postgres internal URL |
 | `auth/status` → `ready: false` | Redeploy API (clears build cache) so auth tables are created |
