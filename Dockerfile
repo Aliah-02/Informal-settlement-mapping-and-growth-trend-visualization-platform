@@ -5,7 +5,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-ARG APP_REVISION=2026-07-09-v7-cors-stats
+ARG APP_REVISION=2026-07-13-v8-render-root
 RUN echo "Build revision: ${APP_REVISION}"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

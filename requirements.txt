@@ -1,0 +1,3 @@
+# Render native Python build (repo root).
+# Prefer Docker: set Runtime = Docker and Dockerfile Path = ./Dockerfile
+-r Dar-informal-settlements-webGIS/backend/requirements.txt
