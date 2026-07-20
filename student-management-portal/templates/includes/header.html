@@ -1,0 +1,16 @@
+{% comment %}
+  Shared page header — title and subtitle come from each view's context.
+  Filters demonstrated: title (capitalization), default (fallback).
+{% endcomment %}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">{{ portal_name }}</p>
+    <h1>{{ page_title|default:"Portal"|title }}</h1>
+    {% if page_subtitle %}
+      <p class="lede">{{ page_subtitle }}</p>
+    {% endif %}
+  </div>
+  <div class="page-header-meta">
+    <time datetime="{% now 'Y-m-d' %}">{% now "l, j F Y" %}</time>
+  </div>
+</section>

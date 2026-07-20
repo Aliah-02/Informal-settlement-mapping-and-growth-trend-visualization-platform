@@ -1,0 +1,17 @@
+{% load static %}
+{# Shared top navigation bar — search + quick links #}
+<header class="topbar">
+  <button type="button" class="menu-toggle" id="menuToggle" aria-label="Toggle navigation" aria-controls="sidebar">
+    <span></span><span></span><span></span>
+  </button>
+
+  <form class="search-form" role="search" onsubmit="return false;">
+    <label class="visually-hidden" for="globalSearch">Search portal</label>
+    <input id="globalSearch" type="search" placeholder="Search students, courses, lecturers…" autocomplete="off">
+  </form>
+
+  <div class="topbar-actions">
+    <a class="topbar-link" href="{% url 'profile' %}">{{ current_user.name|truncatewords:2 }}</a>
+    <img class="avatar avatar-sm" src="{% static 'images/avatar.svg' %}" alt="" width="32" height="32">
+  </div>
+</header>

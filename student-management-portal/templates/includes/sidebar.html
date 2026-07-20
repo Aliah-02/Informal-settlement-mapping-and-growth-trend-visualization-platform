@@ -1,0 +1,51 @@
+{% load static %}
+{% comment %}
+  Shared sidebar — included from base.html via the include tag.
+  Navigation highlighting uses active_nav from the context processor
+  and compares it to each named URL.
+{% endcomment %}
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <img class="brand-mark" src="{% static 'images/logo.svg' %}" alt="{{ portal_name }} logo" width="40" height="40">
+    <div class="brand-text">
+      <span class="brand-name">{{ portal_name }}</span>
+      <span class="brand-tag">Student Portal</span>
+    </div>
+  </div>
+
+  <nav class="side-nav" aria-label="Primary">
+    {# url template tag generates reverse-resolved paths from named routes #}
+    <a class="nav-link {% if active_nav == 'dashboard' %}is-active{% endif %}" href="{% url 'dashboard' %}">
+      <span class="nav-icon" aria-hidden="true">⌂</span> Dashboard
+    </a>
+    <a class="nav-link {% if active_nav == 'students' %}is-active{% endif %}" href="{% url 'students' %}">
+      <span class="nav-icon" aria-hidden="true">◎</span> Students
+    </a>
+    <a class="nav-link {% if active_nav == 'courses' %}is-active{% endif %}" href="{% url 'courses' %}">
+      <span class="nav-icon" aria-hidden="true">▣</span> Courses
+    </a>
+    <a class="nav-link {% if active_nav == 'lecturers' %}is-active{% endif %}" href="{% url 'lecturers' %}">
+      <span class="nav-icon" aria-hidden="true">◇</span> Lecturers
+    </a>
+    <a class="nav-link {% if active_nav == 'departments' %}is-active{% endif %}" href="{% url 'departments' %}">
+      <span class="nav-icon" aria-hidden="true">⬡</span> Departments
+    </a>
+
+    <div class="nav-divider" role="presentation"></div>
+
+    <a class="nav-link {% if active_nav == 'profile' %}is-active{% endif %}" href="{% url 'profile' %}">
+      <span class="nav-icon" aria-hidden="true">○</span> Profile
+    </a>
+    <a class="nav-link {% if active_nav == 'settings' %}is-active{% endif %}" href="{% url 'settings' %}">
+      <span class="nav-icon" aria-hidden="true">⚙</span> Settings
+    </a>
+  </nav>
+
+  <div class="sidebar-foot">
+    <img class="avatar" src="{% static 'images/avatar.svg' %}" alt="" width="36" height="36">
+    <div>
+      <p class="sidebar-user">{{ current_user.name }}</p>
+      <p class="sidebar-role">{{ current_user.role }}</p>
+    </div>
+  </div>
+</aside>

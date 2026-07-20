@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {# Block: child templates override page-specific title #}
+  <title>{% block title %}{{ page_title }} · {{ portal_name }}{% endblock %}</title>
+
+  {# Google Fonts — expressive display + readable body (not Inter/Roboto/Arial) #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  {# Static CSS — configured via STATIC_URL / STATICFILES_DIRS in settings.py #}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    {# Include: reusable partial — shared sidebar on every page #}
+    {% include "includes/sidebar.html" %}
+
+    <div class="app-main">
+      {# Include: shared top navigation bar #}
+      {% include "includes/navbar.html" %}
+
+      {# Include: shared page header (title + subtitle) #}
+      {% include "includes/header.html" %}
+
+      <main class="page-content">
+        {# Block: each child template fills this with unique content #}
+        {% block content %}{% endblock %}
+      </main>
+
+      {# Include: shared footer #}
+      {% include "includes/footer.html" %}
+    </div>
+  </div>
+
+  {# Static JavaScript #}
+  <script src="{% static 'js/main.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

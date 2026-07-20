@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel settings-panel">
+  <div class="panel-head">
+    <h2>Portal preferences</h2>
+    <p class="muted">Sample settings — values are hardcoded for the teaching demo</p>
+  </div>
+
+  <form class="settings-form" method="get" action="{% url 'settings' %}">
+    <fieldset>
+      <legend>Notifications</legend>
+      <label class="check-row">
+        <input type="checkbox" {% if settings.notifications_email %}checked{% endif %} disabled>
+        Email alerts
+      </label>
+      <label class="check-row">
+        <input type="checkbox" {% if settings.notifications_sms %}checked{% endif %} disabled>
+        SMS alerts
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Display</legend>
+      <label>
+        Theme
+        <input type="text" value="{{ settings.theme|title }}" readonly>
+      </label>
+      <label>
+        Language
+        <input type="text" value="{{ settings.language }}" readonly>
+      </label>
+      <label>
+        Timezone
+        <input type="text" value="{{ settings.timezone }}" readonly>
+      </label>
+      <label>
+        Records per page
+        <input type="number" value="{{ settings.records_per_page }}" readonly>
+      </label>
+    </fieldset>
+
+    <p class="form-note">
+      Forms are display-only in this demo. Use
+      <a href="{% url 'profile' %}">Profile</a>
+      to see personal details, or return to the
+      <a href="{% url 'dashboard' %}">Dashboard</a>.
+    </p>
+  </form>
+</section>
+{% endblock %}

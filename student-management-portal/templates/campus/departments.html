@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<section class="stats-grid stats-grid-2" aria-label="Department statistics">
+  {% include "includes/stats_card.html" with label="Departments" value=departments|length hint="Across faculties" tone="teal" %}
+  {% include "includes/stats_card.html" with label="Students (all depts)" value=total_students|intcomma hint="Hardcoded sample totals" tone="ink" %}
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>Department overview</h2>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Department</th>
+          <th>Faculty</th>
+          <th>Head</th>
+          <th>Students</th>
+          <th>Lecturers</th>
+          <th>Courses</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dept in departments %}
+          <tr>
+            <td><code>{{ dept.code }}</code></td>
+            <td>{{ dept.name }}</td>
+            <td>{{ dept.faculty }}</td>
+            <td>{{ dept.head }}</td>
+            <td>{{ dept.students|intcomma }}</td>
+            <td>{{ dept.lecturers }}</td>
+            <td>{{ dept.courses }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="empty-state">No departments listed.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

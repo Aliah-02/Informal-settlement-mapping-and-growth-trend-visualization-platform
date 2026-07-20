@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CampusLink — Advanced Django Templates</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #10233a;
+      --teal: #1f6f68;
+      --amber: #c9852f;
+      --paper: #f4efe6;
+      --muted: #5c6b7a;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #0b1726; color: var(--ink); font-family: "Source Sans 3", sans-serif; }
+    .deck { height: 100%; overflow: hidden; position: relative; }
+    .slide {
+      position: absolute; inset: 0;
+      display: none; flex-direction: column; justify-content: center;
+      padding: clamp(2rem, 6vw, 4.5rem);
+      background:
+        radial-gradient(900px 500px at 100% 0%, rgba(201,133,47,.18), transparent 50%),
+        radial-gradient(800px 400px at 0% 100%, rgba(31,111,104,.22), transparent 55%),
+        linear-gradient(160deg, var(--paper), #e8dfcf);
+    }
+    .slide.active { display: flex; animation: in .35s ease; }
+    @keyframes in { from { opacity: 0; transform: translateY(12px);} to { opacity: 1; transform: none;} }
+    .eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: .85rem; font-weight: 700; color: var(--teal); margin: 0 0 .6rem; }
+    h1, h2 { font-family: "Fraunces", Georgia, serif; margin: 0 0 .75rem; letter-spacing: -.02em; line-height: 1.1; }
+    h1 { font-size: clamp(2.4rem, 5vw, 3.8rem); }
+    h2 { font-size: clamp(1.8rem, 3.6vw, 2.6rem); }
+    p, li { font-size: clamp(1.05rem, 1.6vw, 1.35rem); line-height: 1.45; color: var(--ink); }
+    .lede { max-width: 40ch; color: var(--muted); font-size: clamp(1.15rem, 2vw, 1.45rem); }
+    ul { margin: .4rem 0 0; padding-left: 1.2rem; }
+    li { margin: .35rem 0; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem; }
+    .card {
+      background: rgba(255,255,255,.7); border: 1px solid rgba(16,35,58,.12);
+      border-radius: 16px; padding: 1.1rem 1.25rem; box-shadow: 0 12px 28px rgba(16,35,58,.08);
+    }
+    .card h3 { font-family: "Fraunces", Georgia, serif; margin: 0 0 .5rem; font-size: 1.25rem; }
+    .card p, .card li { font-size: 1.05rem; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: rgba(16,35,58,.08); border-radius: 8px;
+    }
+    code { padding: .1rem .35rem; font-size: .92em; }
+    pre {
+      padding: 1rem 1.1rem; overflow: auto; margin: .8rem 0 0;
+      font-size: .95rem; line-height: 1.4; white-space: pre-wrap;
+    }
+    .footer-bar {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .75rem 1.25rem; color: #d9e2ec; font-size: .9rem;
+      background: linear-gradient(180deg, transparent, rgba(11,23,38,.85));
+      z-index: 5;
+    }
+    .controls button {
+      border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08);
+      color: #fff; border-radius: 999px; padding: .45rem .9rem; margin-left: .35rem;
+      cursor: pointer; font: inherit;
+    }
+    .controls button:hover { background: rgba(201,133,47,.35); }
+    .brand-mark {
+      width: 64px; height: 64px; border-radius: 14px; margin-bottom: 1rem;
+      background: var(--ink); display: grid; place-items: center; color: var(--amber);
+      font-family: "Fraunces", Georgia, serif; font-size: 1.6rem; font-weight: 700;
+    }
+    .checklist li::marker { color: var(--teal); }
+    table { width: 100%; border-collapse: collapse; margin-top: .8rem; font-size: 1.05rem; }
+    th, td { text-align: left; padding: .55rem .4rem; border-bottom: 1px solid rgba(16,35,58,.12); vertical-align: top; }
+    th { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; }
+    .tiny { color: var(--muted); font-size: .95rem; margin-top: .8rem; }
+    @media (max-width: 800px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .slide { padding: 1.5rem; justify-content: flex-start; padding-top: 2rem; overflow: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck" id="deck">
+
+    <!-- 1 -->
+    <section class="slide active">
+      <div class="brand-mark">CL</div>
+      <p class="eyebrow">Group peer teaching · Django templates</p>
+      <h1>CampusLink</h1>
+      <p class="lede">Student Management Portal — Advanced Django Templates &amp; Template Reusability</p>
+      <p class="tiny">Theory · Architecture · Implementation · Live demonstration</p>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide">
+      <p class="eyebrow">Agenda</p>
+      <h2>What we will cover</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>1. Theory</h3>
+          <ul>
+            <li>Why template inheritance matters</li>
+            <li><code>extends</code> vs <code>include</code></li>
+            <li>Tags, filters, static files</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>2. Practice</h3>
+          <ul>
+            <li>Portal architecture</li>
+            <li>Implementation walkthrough</li>
+            <li>Live feature demonstration</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="slide">
+      <p class="eyebrow">Theory</p>
+      <h2>Why template inheritance?</h2>
+      <ul>
+        <li><strong>Reduce duplication</strong> — layout written once in a base template</li>
+        <li><strong>Consistency</strong> — navbar, sidebar, footer stay identical</li>
+        <li><strong>Faster changes</strong> — update the base or an include, every page updates</li>
+        <li><strong>Clear responsibility</strong> — pages only fill their unique content blocks</li>
+      </ul>
+    </section>
+
+    <!-- 4 -->
+    <section class="slide">
+      <p class="eyebrow">Theory</p>
+      <h2>Base templates, blocks, extending</h2>
+      <pre>{# base.html #}
+{% block title %}…{% endblock %}
+{% block content %}{% endblock %}
+
+{# students.html #}
+{% extends "base.html" %}
+{% block content %}
+  …page-only markup…
+{% endblock %}</pre>
+      <p class="tiny"><code>extends</code> must be the first tag. Children override blocks; they do not rebuild the whole page.</p>
+    </section>
+
+    <!-- 5 -->
+    <section class="slide">
+      <p class="eyebrow">Theory</p>
+      <h2>Include vs Extend</h2>
+      <table>
+        <thead><tr><th></th><th>extends</th><th>include</th></tr></thead>
+        <tbody>
+          <tr><td>Purpose</td><td>Inherit full page skeleton</td><td>Embed a reusable fragment</td></tr>
+          <tr><td>Analogy</td><td>Subclass a layout</td><td>Call a component</td></tr>
+          <tr><td>CampusLink</td><td><code>templates/campus/*.html</code></td><td><code>templates/includes/*</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 6 -->
+    <section class="slide">
+      <p class="eyebrow">Theory</p>
+      <h2>Common tags &amp; filters</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Tags</h3>
+          <ul>
+            <li><code>extends</code> <code>block</code> <code>include</code></li>
+            <li><code>if</code> / <code>for</code></li>
+            <li><code>url</code> <code>static</code> <code>now</code></li>
+            <li><code>load</code> <code>widthratio</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Filters</h3>
+          <ul>
+            <li><code>title</code> <code>upper</code> <code>lower</code></li>
+            <li><code>date</code> <code>floatformat</code></li>
+            <li><code>truncatewords</code> <code>default</code></li>
+            <li><code>length</code> <code>intcomma</code></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section class="slide">
+      <p class="eyebrow">Theory</p>
+      <h2>Static files in Django</h2>
+      <ul>
+        <li><code>STATIC_URL</code> — browser URL prefix (<code>/static/</code>)</li>
+        <li><code>STATICFILES_DIRS</code> — project assets during development</li>
+        <li><code>STATIC_ROOT</code> — <code>collectstatic</code> output for production</li>
+      </ul>
+      <pre>{% load static %}
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<script src="{% static 'js/main.js' %}"></script>
+<img src="{% static 'images/logo.svg' %}" alt="Logo"></pre>
+    </section>
+
+    <!-- 8 -->
+    <section class="slide">
+      <p class="eyebrow">Architecture</p>
+      <h2>Production-style folder layout</h2>
+      <pre>student-management-portal/
+  config/          settings, root urls
+  campus/          views, urls, sample data
+  templates/
+    base.html
+    includes/      navbar, sidebar, header, footer, cards
+    campus/        pages that extend base
+  static/css|js|images
+  docs/presentation.html
+  TEACHING_NOTES.md
+  README.md</pre>
+    </section>
+
+    <!-- 9 -->
+    <section class="slide">
+      <p class="eyebrow">Architecture</p>
+      <h2>How a page is assembled</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Shared shell</h3>
+          <ul>
+            <li>Sidebar + navbar + header + footer via <code>include</code></li>
+            <li>CSS/JS loaded once in <code>base.html</code></li>
+            <li><code>active_nav</code> from context processor</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Page body</h3>
+          <ul>
+            <li>View builds context (lists/dicts)</li>
+            <li>Template fills <code>block content</code></li>
+            <li>Loops/filters render tables &amp; cards</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section class="slide">
+      <p class="eyebrow">Implementation</p>
+      <h2>Portal pages</h2>
+      <ul class="checklist">
+        <li>Dashboard — stats cards, activity, previews</li>
+        <li>Students / Courses / Lecturers / Departments — dynamic tables</li>
+        <li>Profile — account details + static avatar</li>
+        <li>Settings — preference form (display-only sample data)</li>
+      </ul>
+      <p class="tiny">Database optional — sample data lives in <code>campus/data.py</code>.</p>
+    </section>
+
+    <!-- 11 -->
+    <section class="slide">
+      <p class="eyebrow">Implementation</p>
+      <h2>Features we built</h2>
+      <div class="grid-2">
+        <div class="card">
+          <ul>
+            <li>Base template inheritance</li>
+            <li>Shared navigation &amp; footer</li>
+            <li>Reusable stats card include</li>
+            <li>Navigation highlighting</li>
+          </ul>
+        </div>
+        <div class="card">
+          <ul>
+            <li>Static CSS, JS, images</li>
+            <li>Conditionals for status badges</li>
+            <li>Filters for dates, GPA, text</li>
+            <li><code>{% url %}</code> for all links</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12 -->
+    <section class="slide">
+      <p class="eyebrow">Implementation</p>
+      <h2>Key code patterns</h2>
+      <pre>{# Inheritance #}
+{% extends "base.html" %}
+
+{# Include with variables #}
+{% include "includes/stats_card.html" with label="Students" value=6 tone="teal" %}
+
+{# URL + highlight #}
+<a class="{% if active_nav == 'students' %}is-active{% endif %}"
+   href="{% url 'students' %}">Students</a>
+
+{# Filter + conditional #}
+{{ student.gpa|floatformat:2 }}
+{% if student.status == "active" %}…{% endif %}</pre>
+    </section>
+
+    <!-- 13 -->
+    <section class="slide">
+      <p class="eyebrow">Demonstration</p>
+      <h2>Live demo checklist</h2>
+      <ol>
+        <li>Open Dashboard — shared shell + stats cards</li>
+        <li>Navigate pages — active nav highlighting</li>
+        <li>Students table — loops, filters, badges</li>
+        <li>Courses — enrolment meters (<code>widthratio</code>)</li>
+        <li>Profile/Settings — static images + includes</li>
+        <li>Show <code>base.html</code> / includes in the editor</li>
+      </ol>
+    </section>
+
+    <!-- 14 -->
+    <section class="slide">
+      <p class="eyebrow">Demonstration</p>
+      <h2>How to run the portal</h2>
+      <pre>cd student-management-portal
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver</pre>
+      <p class="tiny">Open <strong>http://127.0.0.1:8000/</strong> · Slides: open <code>docs/presentation.html</code> in a browser</p>
+    </section>
+
+    <!-- 15 -->
+    <section class="slide">
+      <p class="eyebrow">Wrap-up</p>
+      <h2>Takeaways</h2>
+      <ul>
+        <li><strong>Extend</strong> for page layout · <strong>Include</strong> for reusable pieces</li>
+        <li>Blocks keep child templates small and focused</li>
+        <li>Tags reverse URLs and load static assets safely</li>
+        <li>Filters transform data at render time</li>
+        <li>Clear folder organization scales to production</li>
+      </ul>
+    </section>
+
+    <!-- 16 -->
+    <section class="slide">
+      <p class="eyebrow">Deliverables</p>
+      <h2>Thank you</h2>
+      <ul>
+        <li>Complete source code on GitHub</li>
+        <li>These presentation slides</li>
+        <li>Teaching notes / handout</li>
+        <li>README with setup instructions</li>
+        <li>Live demonstration of required features</li>
+      </ul>
+      <p class="tiny">Questions?</p>
+    </section>
+  </div>
+
+  <div class="footer-bar">
+    <span id="progress">1 / 16 · CampusLink</span>
+    <div class="controls">
+      <button type="button" id="prevBtn">← Prev</button>
+      <button type="button" id="nextBtn">Next →</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      let i = 0;
+      const progress = document.getElementById("progress");
+      function show(n) {
+        i = Math.max(0, Math.min(slides.length - 1, n));
+        slides.forEach((s, idx) => s.classList.toggle("active", idx === i));
+        progress.textContent = (i + 1) + " / " + slides.length + " · CampusLink";
+      }
+      document.getElementById("prevBtn").onclick = () => show(i - 1);
+      document.getElementById("nextBtn").onclick = () => show(i + 1);
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { e.preventDefault(); show(i + 1); }
+        if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); show(i - 1); }
+        if (e.key === "Home") show(0);
+        if (e.key === "End") show(slides.length - 1);
+      });
+    })();
+  </script>
+</body>
+</html>

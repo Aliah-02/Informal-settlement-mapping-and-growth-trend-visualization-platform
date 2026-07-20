@@ -1,0 +1,11 @@
+{% comment %}
+  Reusable statistics card — called with include ... with ...
+  Expected variables: label, value, hint, tone
+{% endcomment %}
+<article class="stat-card tone-{{ tone|default:'ink' }}">
+  <p class="stat-label">{{ label }}</p>
+  <p class="stat-value">{{ value }}</p>
+  {% if hint %}
+    <p class="stat-hint">{{ hint }}</p>
+  {% endif %}
+</article>
