@@ -1,32 +1,48 @@
-# Peer Teaching Notes — Advanced Django Templates
+# CampusLink Teaching Notes / Handout
 
-Use this document when presenting CampusLink. Each section maps to a concept the group must teach, with pointers into this project.
+**Topic:** Advanced Django Templates & Template Reusability  
+**Project:** CampusLink Student Management Portal  
+**Audience:** Peer teaching / classroom handout
+
+Use this handout while presenting, studying, or marking the practical demo.
+
+---
+
+## Learning objectives
+
+By the end of this session you should be able to:
+
+1. Explain why template inheritance reduces duplication
+2. Distinguish `{% extends %}` from `{% include %}`
+3. Use blocks, loops, conditionals, filters, and the `{% url %}` / `{% static %}` tags
+4. Organize templates and static files in a production-friendly layout
+5. Point to working examples in CampusLink
 
 ---
 
 ## 1. Why template inheritance is important
 
-Without inheritance, every page would repeat the same `<html>`, sidebar, navbar, footer, and CSS/JS links. That causes:
+Without inheritance, every page repeats the same `<html>` shell, sidebar, navbar, footer, and asset links. That causes:
 
-- **Duplication** — one design change means editing many files
-- **Inconsistency** — pages drift apart over time
-- **Harder onboarding** — new pages must copy-paste large boilerplate
+| Problem | Result |
+|---------|--------|
+| Duplication | One design change requires editing many files |
+| Inconsistency | Pages slowly drift apart |
+| Slow onboarding | New pages start from copy-paste |
 
-**Inheritance solves this:** define the shared layout once in `templates/base.html`, then let each page fill only the unique parts via `{% block content %}`.
+**Inheritance fix:** define the shared layout once in `templates/base.html`. Each page only fills unique regions with `{% block content %}`.
 
-**Demo:** open `templates/base.html` and any page under `templates/campus/`. Show that changing the brand name in the sidebar include updates *every* page.
+**CampusLink demo:** change brand text in `templates/includes/sidebar.html` → every page updates.
 
 ---
 
 ## 2. Base templates, blocks, and extending
 
-| Concept | In this project |
-|---------|-----------------|
-| **Base template** | `templates/base.html` |
-| **Blocks** | `title`, `content`, `extra_css`, `extra_js` |
-| **Extending** | `{% extends "base.html" %}` at the top of each page |
-
-Child template pattern:
+| Concept | In CampusLink |
+|---------|----------------|
+| Base template | `templates/base.html` |
+| Blocks | `title`, `content`, `extra_css`, `extra_js` |
+| Extending | `{% extends "base.html" %}` on every page |
 
 ```django
 {% extends "base.html" %}
@@ -36,36 +52,31 @@ Child template pattern:
 {% endblock %}
 ```
 
-Rules to remember:
+**Rules**
 
-1. `{% extends %}` must be the **first** template tag in the file.
-2. Child templates should mostly override blocks — avoid redefining the whole document.
-3. Empty blocks in the base (`{% block extra_css %}{% endblock %}`) are extension points for optional assets.
+1. `{% extends %}` must be the **first** template tag
+2. Children override blocks — they do not rebuild the whole document
+3. Empty blocks in the base are optional extension points
 
 ---
 
-## 3. Difference between `include` and `extend`
+## 3. Difference between include and extend
 
 | | `{% extends %}` | `{% include %}` |
 |--|-----------------|-----------------|
-| **Purpose** | Inherit a full page skeleton | Insert a reusable fragment |
-| **Relationship** | Child *is a* specialized version of the base | Parent *embeds* a partial |
-| **Typical use** | Whole pages (dashboard, students…) | Navbar, sidebar, footer, cards |
-| **Blocks** | Child fills `{% block %}` regions | Included file is inserted as-is |
-| **This project** | `templates/campus/*.html` | `templates/includes/*.html` |
+| Purpose | Inherit a full page skeleton | Insert a reusable fragment |
+| Relationship | Child *is a* specialized page | Parent *embeds* a partial |
+| Typical use | Whole pages | Navbar, sidebar, footer, cards |
+| Blocks | Child fills `{% block %}` regions | Included file is inserted as-is |
+| CampusLink | `templates/campus/*.html` | `templates/includes/*.html` |
 
-**Analogy:** `extends` is like subclassing a layout class; `include` is like calling a helper component.
-
-**Demo:**
-
-- Extends → `templates/campus/students.html`
-- Include → `{% include "includes/stats_card.html" with label=... value=... %}`
+**Analogy:** `extends` ≈ subclassing a layout · `include` ≈ calling a component.
 
 ---
 
 ## 4. How includes improve maintainability
 
-Shared pieces live in `templates/includes/`:
+Shared partials in `templates/includes/`:
 
 - `navbar.html` — top bar
 - `sidebar.html` — primary navigation + brand
@@ -73,54 +84,48 @@ Shared pieces live in `templates/includes/`:
 - `footer.html` — copyright
 - `stats_card.html` — reusable KPI card
 
-Update the sidebar once → every page updates. Pass local variables with `with`:
-
 ```django
 {% include "includes/stats_card.html" with label="Students" value=12 tone="teal" %}
 ```
+
+Update once → reuse everywhere.
 
 ---
 
 ## 5. Common built-in template tags
 
-| Tag | Role | Example in project |
-|-----|------|--------------------|
-| `{% extends %}` | Inherit base | All campus pages |
-| `{% block %}` | Overridable region | `content` in base |
-| `{% include %}` | Embed partial | Sidebar, stats cards |
-| `{% load %}` | Load tag/filter library | `{% load static %}`, `{% load humanize %}` |
-| `{% static %}` | Resolve static file URL | CSS, JS, images |
-| `{% url %}` | Reverse a named URL | Navigation links |
-| `{% if %} / {% elif %} / {% else %}` | Conditionals | Student status badges |
-| `{% for %} / {% empty %}` | Loops | Tables and activity lists |
-| `{% now %}` | Current date/time | Header and footer |
-| `{% widthratio %}` | Proportional math | Course enrolment meters |
+| Tag | Role | Where to see it |
+|-----|------|-----------------|
+| `extends` / `block` | Inheritance | All campus pages |
+| `include` | Partials | `base.html`, dashboard |
+| `load` | Enable libraries | `{% load static %}`, `{% load humanize %}` |
+| `static` | Asset URLs | CSS, JS, images |
+| `url` | Reverse named routes | Sidebar / links |
+| `if` / `elif` / `else` | Conditionals | Status badges |
+| `for` / `empty` | Loops | Tables |
+| `now` | Current date/time | Header, footer |
+| `widthratio` | Proportional width | Course enrolment meters |
 
 ---
 
 ## 6. Common template filters
 
-Filters transform values with the pipe `|` operator.
+Filters transform values with `|`.
 
-| Filter | What it does | Example |
-|--------|--------------|---------|
-| `title` | Title-case text | `{{ page_title\|title }}` |
-| `upper` / `lower` | Case transform | Student names / emails |
-| `date` | Format dates | `{{ student.enrolled\|date:"M j, Y" }}` |
-| `floatformat` | Round decimals | GPA display |
-| `truncatewords` / `truncatechars` | Shorten text | Bio, course titles |
-| `default` | Fallback if empty | Header title |
-| `length` | Count items | `{{ students\|length }}` |
-| `intcomma` | Thousands separators | Department headcounts (`humanize`) |
-| `add` | Numeric adjust | Near-capacity checks |
-
-**Demo idea:** change `floatformat:2` to `floatformat:1` on the students page and refresh.
+| Filter | Effect | Example |
+|--------|--------|---------|
+| `title` | Title case | Page headings |
+| `upper` / `lower` | Case change | Student names / emails |
+| `date` | Format dates | Enrolment column |
+| `floatformat` | Round decimals | GPA |
+| `truncatewords` / `truncatechars` | Shorten text | Bio, titles |
+| `default` | Fallback | Header title |
+| `length` | Count | `{{ students\|length }}` |
+| `intcomma` | Thousands separators | Department totals |
 
 ---
 
-## 7. Conditional statements and loops
-
-**Conditionals** (`students.html`, `dashboard.html`):
+## 7. Conditionals and loops
 
 ```django
 {% if student.status == "active" %}
@@ -132,8 +137,6 @@ Filters transform values with the pipe `|` operator.
 {% endif %}
 ```
 
-**Loops** with `{% empty %}` for the zero-results case:
-
 ```django
 {% for student in students %}
   <tr>…</tr>
@@ -144,20 +147,15 @@ Filters transform values with the pipe `|` operator.
 
 ---
 
-## 8. The `{% url %}` template tag
+## 8. The `{% url %}` tag and navigation highlighting
 
-Named routes live in `campus/urls.py` (`name="students"`, etc.). Templates never hardcode paths:
+Named routes in `campus/urls.py` keep templates free of hardcoded paths:
 
 ```django
 <a href="{% url 'students' %}">Students</a>
 ```
 
-Benefits:
-
-- Rename a path in `urls.py` without hunting through HTML
-- Avoid broken links when mounting the app under a prefix
-
-**Navigation highlighting** combines `{% url %}` with a context processor (`campus/context_processors.py`) that sets `active_nav` to the current `url_name`. The sidebar compares:
+CampusLink sets `active_nav` in `campus/context_processors.py` and highlights the current link:
 
 ```django
 <a class="nav-link {% if active_nav == 'students' %}is-active{% endif %}"
@@ -168,15 +166,15 @@ Benefits:
 
 ## 9. Static files — CSS, JavaScript, images
 
-### Configuration (`config/settings.py`)
+**Settings (`config/settings.py`)**
 
-```python
-STATIC_URL = "/static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]   # project-level assets (dev)
-STATIC_ROOT = BASE_DIR / "staticfiles"     # collectstatic target (prod)
-```
+| Setting | Purpose |
+|---------|---------|
+| `STATIC_URL` | URL prefix (`/static/`) |
+| `STATICFILES_DIRS` | Project static folder (development) |
+| `STATIC_ROOT` | `collectstatic` destination (production) |
 
-### Loading in templates
+**Templates**
 
 ```django
 {% load static %}
@@ -185,61 +183,49 @@ STATIC_ROOT = BASE_DIR / "staticfiles"     # collectstatic target (prod)
 <img src="{% static 'images/logo.svg' %}" alt="CampusLink logo">
 ```
 
-### Production note
-
-In production you typically run:
-
-```bash
-python manage.py collectstatic
-```
-
-Then serve `STATIC_ROOT` with Nginx/CDN. Never rely on Django’s dev static server in production.
+**Production:** run `python manage.py collectstatic` and serve `STATIC_ROOT` with Nginx/CDN.
 
 ---
 
 ## 10. Production folder organization
 
-Recommended layout (what this repo follows):
-
 ```
-project/
-  config/           # settings, root urls, wsgi/asgi
-  app_name/         # views, urls, models, context_processors
+student-management-portal/
+  config/                 # settings, root urls
+  campus/                 # views, urls, data, context processor
   templates/
-    base.html
-    includes/       # shared partials
-    app_name/       # pages that extend base
-  static/
-    css/
-    js/
-    images/
-  manage.py
-  requirements.txt
+    base.html             # inheritance root
+    includes/             # shared partials
+    campus/               # pages that extend base
+  static/css|js|images
+  docs/presentation.html  # slides
+  TEACHING_NOTES.md       # this handout
+  README.md
 ```
 
-Guidelines:
+**Guidelines**
 
-1. Keep **one** project-level `templates/base.html`.
-2. Put reusable fragments in `templates/includes/`.
-3. Keep page templates thin — logic belongs in views.
-4. Group static assets by type (`css/`, `js/`, `images/`).
-5. Use a context processor for data needed on *every* page (user, active nav).
-
----
-
-## 11. Suggested live demonstration script (≈10 minutes)
-
-1. **Duplication problem** — imagine copying the sidebar into 7 pages; then show `base.html` + includes instead.
-2. **Blocks** — edit the `content` block of `dashboard.html` only; sidebar stays intact.
-3. **Include** — change text in `footer.html`; refresh any page.
-4. **Static files** — show `STATICFILES_DIRS` and `{% static %}` in `base.html`.
-5. **Filters** — point at GPA `floatformat` and enrol date `date` on Students.
-6. **URL tag** — change a path in `campus/urls.py`, show that `{% url %}` links still work after updating the route path (name unchanged).
-7. **Nav highlight** — click through Students → Courses and show the `is-active` class.
+1. One project-level `base.html`
+2. Reusable fragments under `includes/`
+3. Keep page templates thin — logic in views
+4. Group static assets by type
+5. Use a context processor for data needed on every page
 
 ---
 
-## 12. Concept checklist (for marking / self-review)
+## 11. Live demonstration script (~10 minutes)
+
+1. Start the server and open the Dashboard (shared shell + stats cards)
+2. Click through Students → Courses → Lecturers (nav highlighting)
+3. On Students, point out loops, `floatformat`, `date`, and status conditionals
+4. On Courses, show enrolment meters (`widthratio`)
+5. Open Profile (static avatar image) and Settings
+6. In the editor, open `base.html` and an include — show one change updates all pages
+7. Show `{% url %}` in the sidebar and the matching names in `campus/urls.py`
+
+---
+
+## 12. Concept checklist
 
 - [x] Template inheritance
 - [x] Base templates
@@ -256,3 +242,19 @@ Guidelines:
 - [x] Shared navbar / sidebar / header / footer
 - [x] Dynamic tables & statistics cards
 - [x] Navigation highlighting
+
+---
+
+## Quick reference — run the project
+
+```bash
+cd student-management-portal
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+- Portal: http://127.0.0.1:8000/  
+- Slides: open `docs/presentation.html` in a browser  
+- Full setup: see `README.md`
