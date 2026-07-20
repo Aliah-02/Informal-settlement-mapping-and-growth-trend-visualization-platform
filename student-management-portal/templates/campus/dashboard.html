@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% comment %}
+  extends — inherits structure from base.html (sidebar, navbar, header, footer).
+  Only the content block is unique to this page.
+{% endcomment %}
+
+{% block content %}
+<section class="stats-grid" aria-label="Campus statistics">
+  {% for stat in stats %}
+    {% include "includes/stats_card.html" with label=stat.label value=stat.value hint=stat.hint tone=stat.tone %}
+  {% empty %}
+    <p class="empty-state">No statistics available.</p>
+  {% endfor %}
+</section>
+
+<div class="split-panels">
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Recent activity</h2>
+      <a class="text-link" href="{% url 'students' %}">View students</a>
+    </div>
+    <ul class="activity-list">
+      {% for item in recent_activity %}
+        <li>
+          <strong>{{ item.actor }}</strong>
+          {{ item.action }}
+          <em>{{ item.target }}</em>
+          <span class="muted">{{ item.when }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Course snapshot</h2>
+      <a class="text-link" href="{% url 'courses' %}">All courses</a>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Title</th>
+            <th>Enrolled</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for course in courses_preview %}
+            <tr>
+              <td><code>{{ course.code }}</code></td>
+              <td>{{ course.title|truncatechars:28 }}</td>
+              <td>
+                {{ course.enrolled }}
+                {% if course.enrolled >= course.capacity %}
+                  <span class="badge badge-warn">Full</span>
+                {% elif course.enrolled >= course.capacity|add:"-5" %}
+                  <span class="badge badge-amber">Nearly full</span>
+                {% else %}
+                  <span class="badge badge-ok">Open</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>Student preview</h2>
+    <a class="text-link" href="{% url 'students' %}">Full directory</a>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Department</th>
+          <th>GPA</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in students_preview %}
+          <tr>
+            <td>{{ student.id }}</td>
+            <td>{{ student.name }}</td>
+            <td>{{ student.department }}</td>
+            <td>{{ student.gpa|floatformat:2 }}</td>
+            <td>
+              <span class="badge badge-{{ student.status }}">{{ student.status|title }}</span>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

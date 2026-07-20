@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="stats-grid stats-grid-3" aria-label="Course statistics">
+  {% include "includes/stats_card.html" with label="Courses" value=courses|length hint="Published catalogue" tone="teal" %}
+  {% include "includes/stats_card.html" with label="Seats filled" value=total_enrolled hint="Across all courses" tone="ink" %}
+  {% include "includes/stats_card.html" with label="Total capacity" value=total_capacity hint="Maximum enrolment" tone="amber" %}
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>Course catalogue</h2>
+    <p class="muted">Enrolment meters use loops, widthratio, and filters</p>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Title</th>
+          <th>Department</th>
+          <th>Credits</th>
+          <th>Lecturer</th>
+          <th>Term</th>
+          <th>Enrolment</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for course in courses %}
+          <tr>
+            <td><code>{{ course.code }}</code></td>
+            <td>{{ course.title }}</td>
+            <td>{{ course.department }}</td>
+            <td>{{ course.credits }}</td>
+            <td>{{ course.lecturer }}</td>
+            <td>{{ course.term }}</td>
+            <td>
+              {{ course.enrolled }} / {{ course.capacity }}
+              {% widthratio course.enrolled course.capacity 100 as fill_pct %}
+              <div class="meter" aria-hidden="true">
+                <span style="width: {{ fill_pct }}%"></span>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="empty-state">No courses listed.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

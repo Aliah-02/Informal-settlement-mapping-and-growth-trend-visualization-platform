@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<section class="stats-grid stats-grid-3" aria-label="Student statistics">
+  {% include "includes/stats_card.html" with label="Total students" value=students|length hint="Sample directory" tone="teal" %}
+  {% include "includes/stats_card.html" with label="Active" value=active_count hint="In good standing" tone="ink" %}
+  {% include "includes/stats_card.html" with label="On probation" value=probation_count hint="Needs follow-up" tone="amber" %}
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>Student directory</h2>
+    <p class="muted">{{ students|length }} records · filters &amp; loops in action</p>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table" id="studentsTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Department</th>
+          <th>Year</th>
+          <th>GPA</th>
+          <th>Enrolled</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in students %}
+          <tr>
+            <td>{{ student.id }}</td>
+            <td>{{ student.name|upper }}</td>
+            <td>{{ student.email|lower }}</td>
+            <td>{{ student.department }}</td>
+            <td>Year {{ student.year }}</td>
+            <td>
+              {# Conditional + floatformat filter #}
+              {% if student.gpa >= 3.5 %}
+                <strong class="gpa-high">{{ student.gpa|floatformat:2 }}</strong>
+              {% elif student.gpa >= 3.0 %}
+                {{ student.gpa|floatformat:2 }}
+              {% else %}
+                <span class="gpa-low">{{ student.gpa|floatformat:2 }}</span>
+              {% endif %}
+            </td>
+            <td>{{ student.enrolled|date:"M j, Y" }}</td>
+            <td>
+              {% if student.status == "active" %}
+                <span class="badge badge-active">Active</span>
+              {% elif student.status == "probation" %}
+                <span class="badge badge-probation">Probation</span>
+              {% else %}
+                <span class="badge badge-inactive">Inactive</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" class="empty-state">No students found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

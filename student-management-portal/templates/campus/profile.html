@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<section class="profile-layout">
+  <aside class="profile-card">
+    <img class="profile-avatar" src="{% static 'images/avatar.svg' %}" alt="" width="96" height="96">
+    <h2>{{ profile.name }}</h2>
+    <p class="muted">{{ profile.role }} · {{ profile.department }}</p>
+    <a class="button" href="{% url 'settings' %}">Open settings</a>
+  </aside>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Account details</h2>
+    </div>
+    <dl class="detail-list">
+      <div>
+        <dt>Full name</dt>
+        <dd>{{ profile.name }}</dd>
+      </div>
+      <div>
+        <dt>Email</dt>
+        <dd>{{ profile.email }}</dd>
+      </div>
+      <div>
+        <dt>Phone</dt>
+        <dd>{{ profile.phone }}</dd>
+      </div>
+      <div>
+        <dt>Department</dt>
+        <dd>{{ profile.department }}</dd>
+      </div>
+      <div>
+        <dt>Joined</dt>
+        {# date filter transforms a Python date object #}
+        <dd>{{ profile.joined|date:"F j, Y" }}</dd>
+      </div>
+      <div>
+        <dt>Bio</dt>
+        <dd>{{ profile.bio|truncatewords:28 }}</dd>
+      </div>
+    </dl>
+  </section>
+</section>
+{% endblock %}
